@@ -1,8 +1,8 @@
 From c8483156a5b8abaff7f7712e2457d9034187c0ed Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Thu, 24 Sep 2026 23:27:21 +0200
-Subject: [PATCH] feat: modernize toolbar design and replace icons with Lucide
- vectors
+Subject: [PATCH 12/15] feat: modernize toolbar design and replace icons with
+ Lucide vectors
 
 ---
  browser/css/notebookbar.css             | 104 +++++++++++-------------
@@ -1079,6 +1079,3 @@ index 1f7c8de7..fd4e4808 100644
      container_name: ralue-editor
      restart: unless-stopped
      ports:
--- 
-2.47.0.windows.1
-

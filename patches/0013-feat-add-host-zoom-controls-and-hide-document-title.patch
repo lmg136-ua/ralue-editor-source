@@ -1,0 +1,98 @@
+From 3c9fb7fdf0a57001de986e863effde5471d63068 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Thu, 24 Sep 2026 23:58:14 +0200
+Subject: [PATCH 13/15] feat: add host zoom controls and hide document title
+
+---
+ browser/css/menubar.css             |  8 +++----
+ browser/src/map/handler/Map.WOPI.js | 34 +++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 4 deletions(-)
+
+diff --git a/browser/css/menubar.css b/browser/css/menubar.css
+index d546c573..5f015af7 100644
+--- a/browser/css/menubar.css
++++ b/browser/css/menubar.css
+@@ -166,13 +166,13 @@ nav.hasnotebookbar [id^='save'].saved::after {
+ 	margin-right: 52px;
+ }
+ 
+-.main-nav.hasnotebookbar:not(.readonly) #document-titlebar {
+-	/* The host application already owns the CV name and rename workflow. */
+-	display: none;
++.main-nav.hasnotebookbar #document-titlebar {
++	/* The host application owns the CV name in both edit and viewing modes. */
++	display: none !important;
+ }
+ 
+ @media screen and (max-width: 900px) {
+-	.main-nav.hasnotebookbar:not(.readonly) #document-titlebar {
++	.main-nav.hasnotebookbar #document-titlebar {
+ 		display: none;
+ 	}
+ 	.notebookbar-tabs-container {
+diff --git a/browser/src/map/handler/Map.WOPI.js b/browser/src/map/handler/Map.WOPI.js
+index 7d0df734..306cb444 100644
+--- a/browser/src/map/handler/Map.WOPI.js
++++ b/browser/src/map/handler/Map.WOPI.js
+@@ -83,6 +83,7 @@ window.L.Map.WOPI = window.L.Handler.extend({
+ 
+ 	addHooks: function() {
+ 		this._map.on('postMessage', this._postMessage, this);
++		this._map.on('zoomend', this._postZoomState, this);
+ 
+ 		this._map.on('wopiprops', this._setWopiProps, this);
+ 		window.L.DomEvent.on(window, 'message', this._postMessageListener, this);
+@@ -120,6 +121,7 @@ window.L.Map.WOPI = window.L.Handler.extend({
+ 
+ 	removeHooks: function() {
+ 		this._map.off('postMessage', this._postMessage, this);
++		this._map.off('zoomend', this._postZoomState, this);
+ 
+ 		this.postLoadDisable();
+ 
+@@ -670,6 +672,24 @@ window.L.Map.WOPI = window.L.Handler.extend({
+ 		else if (msg.MessageId === 'Get_Views') {
+ 			this._postViewsMessage('Get_Views_Resp');
+ 		}
++		else if (msg.MessageId === 'Action_ZoomIn') {
++			this._map.zoomIn(1, null, true);
++		}
++		else if (msg.MessageId === 'Action_ZoomOut') {
++			this._map.zoomOut(1, null, true);
++		}
++		else if (msg.MessageId === 'Action_ZoomReset') {
++			this._map.setZoom(this._map.options.zoom, null, true);
++		}
++		else if (msg.MessageId === 'Action_SetZoom') {
++			const requestedZoom = Number(msg.Values && msg.Values.Zoom);
++			const zoomIndex = this._map.getZoomIndex(requestedZoom);
++			if (zoomIndex > 0)
++				this._map.setZoom(zoomIndex, null, true);
++		}
++		else if (msg.MessageId === 'Get_Zoom') {
++			this._postZoomState();
++		}
+ 		else if (msg.MessageId === 'Reset_Access_Token') {
+ 			if (msg.Values) {
+ 				// No ttl implies no expiry tracking, matching the legacy
+@@ -1190,6 +1210,20 @@ window.L.Map.WOPI = window.L.Handler.extend({
+ 		}
+ 	},
+ 
++	_postZoomState: function() {
++		if (!this._appLoaded || !this._map._loaded)
++			return;
++
++		this._postMessage({
++			msgId: 'Zoom_Changed',
++			args: {
++				Zoom: this._map.getZoomPercent(),
++				CanZoomIn: this._map.getZoom() < this._map.getMaxZoom(),
++				CanZoomOut: this._map.getZoom() > this._map.getMinZoom()
++			}
++		});
++	},
++
+ 	_postViewsMessage: function(messageId) {
+ 		var getMembersRespVal = [];
+ 		for (var viewInfoIdx in this._map._viewInfo) {

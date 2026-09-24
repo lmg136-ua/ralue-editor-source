@@ -1,0 +1,21 @@
+From ae202016735b66b048866012348d97d794b2c667 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Thu, 24 Sep 2026 23:58:57 +0200
+Subject: [PATCH 14/15] chore: ignore resumable editor build state
+
+---
+ .gitignore | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.gitignore b/.gitignore
+index bd6178a6..e2ae76c5 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,6 +1,7 @@
+ # Editor backup files etc
+ *~
+ \#*
++/.build-progress/
+ 
+ # Autofoo
+ .deps
