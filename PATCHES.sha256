@@ -1,0 +1,10 @@
+713d450c2077948ab5ce0162c4725a24d680bc17c2762b9cc35a1b72233895d5  0001-build-establish-reproducible-Ralue-editor-baseline.patch
+eeb91160dbd5a47315971be2815ce41a2660b2ab4e8db51f37e2071f913098b0  0002-feat-brand-and-simplify-Ralue-Editor-MVP.patch
+5f0b8990b6d623137a80aed93ecef45094b88b6aea0df6f84c1bc66dacdfe698  0003-docs-record-Ralue-Editor-MVP-validation.patch
+0320c8c93d7941c2068e2641aaffbd13ad525cd9694fec1d500a65ac95dc1a04  0004-chore-prepare-Ralue-Editor-staging-deployment.patch
+796fdaf24d24565214b7d96bbdf7701947bb0d2ff6d42ce95e864162640f8dc2  0005-docs-record-Ralue-limits-and-app-integration.patch
+cb1e222d42691434ca8e97c9083666357b8e5965b66b9bc9e394f233ff1c090d  0006-feat-refine-Ralue-editor-canvas-and-toolbar.patch
+3da1c7640203bf0c373a4dd2f4f20a119e78c2d00e71244b8e94c4edbb2fd48e  0007-feat-restore-complete-Ralue-editor-toolbar.patch
+e5939bfdd86f219c71d0098708190b587665395761e4488bd8806adda7b9dd1e  0008-feat-modernize-toolbar-and-stabilize-Writer-zoom.patch
+132515dc39164ef63c626565a776712b44ccda498ab7b9f4af47b37f9acdb106  0009-feat-apply-full-Ralue-color-system-to-toolbar.patch
+6a74312b970dcee04f40bfb1d7a80da8f5ef780576f94e283642c874e6ac4be4  0010-docs-publish-MPL-corresponding-source-offer.patch

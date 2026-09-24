@@ -1,0 +1,201 @@
+From c5cc08d35fd72eeaba2a54bb553f590b4e947df8 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Wed, 23 Sep 2026 16:57:22 +0200
+Subject: [PATCH 04/10] chore: prepare Ralue Editor staging deployment
+
+---
+ .gitignore                       |  3 ++
+ docker/ralue/Caddyfile.example   | 19 ++++++++++++
+ docker/ralue/README.md           | 51 ++++++++++++++++++++++++++++++++
+ docker/ralue/compose.staging.yml | 41 +++++++++++++++++++++++++
+ docker/ralue/staging.env.example | 19 ++++++++++++
+ 5 files changed, 133 insertions(+)
+ create mode 100644 docker/ralue/Caddyfile.example
+ create mode 100644 docker/ralue/compose.staging.yml
+ create mode 100644 docker/ralue/staging.env.example
+
+diff --git a/.gitignore b/.gitignore
+index 52750cc1..bd6178a6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -271,6 +271,9 @@ qt/translations/*.qm
+ 
+ .envrc
+ 
++# Ralue deployment values are server-specific and may contain private hosts.
++/docker/ralue/staging.env
++
+ # This needs to stay at the end, to honor engine/.gitignore:
+ !engine/**
+ /engine/translations
+diff --git a/docker/ralue/Caddyfile.example b/docker/ralue/Caddyfile.example
+new file mode 100644
+index 00000000..356b9e9f
+--- /dev/null
++++ b/docker/ralue/Caddyfile.example
+@@ -0,0 +1,19 @@
++{$RALUE_EDITOR_DOMAIN} {
++	encode zstd gzip
++
++	reverse_proxy 127.0.0.1:{$RALUE_EDITOR_PORT} {
++		stream_timeout 24h
++		stream_close_delay 5m
++		health_uri /hosting/discovery
++		health_interval 30s
++		health_timeout 5s
++	}
++
++	log {
++		output file /var/log/caddy/ralue-editor-access.log {
++			roll_size 10MiB
++			roll_keep 5
++			roll_keep_for 168h
++		}
++	}
++}
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index 46d041f8..a7f27e65 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -54,6 +54,48 @@ keeps the unrestricted non-home-mode connection behavior. Writer retains File,
+ Home, Insert, Layout, Format, and contextual document tabs; review, references,
+ forms, view, extensions, and help tabs are omitted from the default surface.
+ 
++## Staging deployment
++
++The staging definition binds the editor only to loopback. Caddy is the public
++HTTPS and WebSocket entry point, so the container is never exposed directly to
++the internet.
++
++On the server, copy and edit the environment template without committing the
++result:
++
++```powershell
++Copy-Item .\docker\ralue\staging.env.example .\docker\ralue\staging.env
++docker compose --env-file .\docker\ralue\staging.env `
++  -f .\docker\ralue\compose.staging.yml config --quiet
++docker compose --env-file .\docker\ralue\staging.env `
++  -f .\docker\ralue\compose.staging.yml up -d
++```
++
++Copy `Caddyfile.example` to the server's active Caddy configuration and load
++the same `RALUE_EDITOR_DOMAIN` and `RALUE_EDITOR_PORT` values into Caddy's
++service environment. Validate before reloading:
++
++```powershell
++caddy validate --config .\docker\ralue\Caddyfile
++caddy reload --config .\docker\ralue\Caddyfile
++```
++
++The definition includes a health check, automatic restart, bounded Docker log
++rotation, and configurable CPU, RAM, process, and shared-memory limits. The
++defaults are a staging starting point, not a capacity guarantee. Keep WOPI
++storage and database backups outside this stateless editor container.
++
++After deployment, verify all three routes through the public hostname:
++
++```text
++/hosting/discovery
++/hosting/capabilities
++/browser/a1e2604001/cool.html
++```
++
++Then run an authenticated open, edit, save, close, and reopen test through the
++real Ralue application before promoting the image to production.
++
+ ## Return to the tested upstream baseline
+ 
+ Stop the branded service before starting the baseline because both use port
+@@ -78,11 +120,20 @@ Validated locally on 2026-09-23:
+   branded images: `cd949dab5bdc1c7158da06debd9fff493833eed581149cb7118c00fa71103c1e`;
+ - a real DOCX opened through the existing WOPI host, was edited, saved into a
+   new immutable version, closed, and reopened with the edit present;
++- after Docker Desktop and the editor container were restarted, the same WOPI
++  version reopened with both saved validation markers and the expected
++  281-word/1,987-character document state;
++- two simultaneous browser sessions opened the same WOPI document and the
++  editor reported both connected users; the primary session remained healthy
++  after the secondary session closed;
+ - the active DOCX converted through `/cool/convert-to/pdf` to a valid,
+   visually inspected one-page PDF;
+ - the second build reused the exported Docker and ccache data instead of
+   restarting from zero.
+ 
++The staging Compose definition and Caddy template also validate cleanly with
++Docker Compose and the official `caddy:2.10-alpine` image.
++
+ ## Licensing boundary
+ 
+ The upstream MPL-2.0 notices and source history stay intact. Ralue branding is
+diff --git a/docker/ralue/compose.staging.yml b/docker/ralue/compose.staging.yml
+new file mode 100644
+index 00000000..2e0922d3
+--- /dev/null
++++ b/docker/ralue/compose.staging.yml
+@@ -0,0 +1,41 @@
++services:
++  editor:
++    image: ralue/editor:mvp-26.04.2.4
++    container_name: ralue-editor-staging
++    restart: unless-stopped
++    init: true
++    stop_grace_period: 1m
++    ports:
++      - "127.0.0.1:${RALUE_EDITOR_PORT:-9980}:9980"
++    environment:
++      DONT_GEN_SSL_CERT: "true"
++      domain: "${RALUE_WOPI_HOST_REGEX:?Set RALUE_WOPI_HOST_REGEX in staging.env}"
++    command:
++      - "--o:ssl.enable=false"
++      - "--o:ssl.termination=true"
++      - "--o:welcome.enable=false"
++      - "--o:allow_update_popup=false"
++      - "--o:home_mode.enable=false"
++      - "--o:product_name=Ralue Editor"
++      - "--o:user_interface.brandProductName=Ralue Editor"
++      - "--o:user_interface.brandProductURL=https://www.ralue.app"
++      - "--o:user_interface.logoURL=/browser/dist/images/ralue-logo.png"
++      - "--o:logging.level=${RALUE_LOG_LEVEL:-warning}"
++      - "--o:net.frame_ancestors=${RALUE_FRAME_ANCESTORS:?Set RALUE_FRAME_ANCESTORS in staging.env}"
++    healthcheck:
++      test: ["CMD", "/usr/bin/coolconfig", "get", "logging.level"]
++      interval: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
++    mem_limit: "${RALUE_MEMORY_LIMIT:-4g}"
++    mem_reservation: "${RALUE_MEMORY_RESERVATION:-2g}"
++    cpus: "${RALUE_CPU_LIMIT:-2.0}"
++    pids_limit: 1024
++    shm_size: "${RALUE_SHM_SIZE:-1g}"
++    logging:
++      driver: json-file
++      options:
++        max-size: "10m"
++        max-file: "5"
++
+diff --git a/docker/ralue/staging.env.example b/docker/ralue/staging.env.example
+new file mode 100644
+index 00000000..84ac4949
+--- /dev/null
++++ b/docker/ralue/staging.env.example
+@@ -0,0 +1,19 @@
++# Public hostname served by Caddy. Do not add https:// here.
++RALUE_EDITOR_DOMAIN=editor.example.com
++
++# Ralue Editor only listens on loopback; Caddy is the public entry point.
++RALUE_EDITOR_PORT=9980
++
++# Regex of WOPI hosts allowed to connect to the editor.
++# Escape each literal dot with one backslash in this unquoted env value.
++RALUE_WOPI_HOST_REGEX=staging\.example\.com
++
++# Space-separated HTTPS origins allowed to embed the editor in an iframe.
++RALUE_FRAME_ANCESTORS=https://staging.example.com
++
++# Safe starting limits for a small staging server; tune from measured usage.
++RALUE_MEMORY_LIMIT=4g
++RALUE_MEMORY_RESERVATION=2g
++RALUE_CPU_LIMIT=2.0
++RALUE_SHM_SIZE=1g
++RALUE_LOG_LEVEL=warning

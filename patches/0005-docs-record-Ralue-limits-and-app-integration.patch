@@ -1,0 +1,86 @@
+From e71d6e52ac57cb23f1e6eb09ea41725cda61724b Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Wed, 23 Sep 2026 17:04:56 +0200
+Subject: [PATCH 05/10] docs: record Ralue limits and app integration
+
+---
+ docker/ralue/RALUE_APP_INTEGRATION.md | 53 +++++++++++++++++++++++++++
+ docker/ralue/README.md                |  5 +++
+ 2 files changed, 58 insertions(+)
+ create mode 100644 docker/ralue/RALUE_APP_INTEGRATION.md
+
+diff --git a/docker/ralue/RALUE_APP_INTEGRATION.md b/docker/ralue/RALUE_APP_INTEGRATION.md
+new file mode 100644
+index 00000000..9f02dfcf
+--- /dev/null
++++ b/docker/ralue/RALUE_APP_INTEGRATION.md
+@@ -0,0 +1,53 @@
++# Ralue application integration contract
++
++The application remains a WOPI host. Ralue Editor is a stateless document
++engine and must not become the source of truth for files, versions, users, or
++permissions.
++
++## Preferred environment variables
++
++```text
++NEXT_PUBLIC_RALUE_EDITOR_ORIGIN=https://editor.example.com
++RALUE_EDITOR_INTERNAL_ORIGIN=http://ralue-editor:9980
++NEXT_PUBLIC_WOPI_PUBLIC_BASE=https://app.example.com
++```
++
++`NEXT_PUBLIC_COLLABORA_ORIGIN`, `NEXT_PUBLIC_COLLABORA_BASE`, and
++`COLLABORA_INTERNAL_ORIGIN` are migration fallbacks only. New deployments use
++the Ralue names.
++
++## Application routes
++
++- `/ralue-editor/*` is the branded proxy route.
++- `/collabora/*` remains as a temporary backward-compatible alias.
++- `/browser/*`, `/cool/*`, `/lool/*`, and `/hosting/*` preserve the engine and
++  WebSocket contracts expected by existing WOPI sessions.
++
++## Parent application touch points
++
++The Career Hub application integration is intentionally small:
++
++- `next.config.js`: prefer Ralue origins and expose the branded proxy alias;
++- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.4` as `ralue-editor`;
++- `app/pdf-editor/[key]/page.tsx` and `app/cover-letter/[key]/page.tsx`: prefer
++  the Ralue public origin and use the Ralue purple CSS variable;
++- `app/api/preview/pdf/route.ts`: use the server-side Ralue origin for PDF
++  conversion;
++- `.env.example`: document new variables while retaining migration fallbacks.
++
++Do not rename WOPI message IDs or `/cool` protocol routes. Internal legacy
++identifiers can be migrated separately after all existing sessions and tests
++have moved to the branded contract.
++
++## Verification order
++
++1. Check `/hosting/discovery` and `/hosting/capabilities`.
++2. Open an authenticated DOCX through the application.
++3. Edit, save, close, and reopen it; verify the immutable WOPI version changed.
++4. Open a second session and verify both users appear.
++5. Restart the editor container and verify the saved version reopens.
++6. Convert the active DOCX to PDF and inspect the rendered page.
++
++The parent application can have unrelated TypeScript failures. A failure in an
++unrelated route must not invalidate the editor image if the integration checks
++above pass; record both results separately.
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index a7f27e65..47699f31 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -126,6 +126,11 @@ Validated locally on 2026-09-23:
+ - two simultaneous browser sessions opened the same WOPI document and the
+   editor reported both connected users; the primary session remained healthy
+   after the secondary session closed;
++- an information-level startup audit of the compiled image reported 9,999
++  concurrent client connections and 9,999 concurrent open documents, rather
++  than the restricted 20-connection/10-document home-mode values; these are
++  software ceilings, not a promise that one server has enough CPU or RAM for
++  that workload;
+ - the active DOCX converted through `/cool/convert-to/pdf` to a valid,
+   visually inspected one-page PDF;
+ - the second build reused the exported Docker and ccache data instead of

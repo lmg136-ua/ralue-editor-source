@@ -1,0 +1,49 @@
+From bcfa7eeac93b916bbbeaf689be4c7bb75c745562 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Wed, 23 Sep 2026 01:03:13 +0200
+Subject: [PATCH 03/10] docs: record Ralue Editor MVP validation
+
+---
+ docker/ralue/README.md | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index 160c98c2..46d041f8 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -54,6 +54,35 @@ keeps the unrestricted non-home-mode connection behavior. Writer retains File,
+ Home, Insert, Layout, Format, and contextual document tabs; review, references,
+ forms, view, extensions, and help tabs are omitted from the default surface.
+ 
++## Return to the tested upstream baseline
++
++Stop the branded service before starting the baseline because both use port
++`9982`:
++
++```powershell
++docker compose -f .\\docker\\ralue\\compose.yml down
++docker compose -f .\\docker\\ralue\\compose.baseline.yml up -d
++```
++
++The baseline image `ralue/editor:upstream-26.04.2.4` is kept locally and the
++source checkpoint is tagged `ralue-upstream-26.04.2.4`.
++
++## MVP acceptance evidence
++
++Validated locally on 2026-09-23:
++
++- discovery, capabilities, logo, favicon, and browser bundle returned HTTP 200;
++- product name is `Ralue Editor`, source version is `26.04.2.4`, and the
++  deployable browser revision is `a1e2604001`;
++- the engine binary `libmergedlo.so` has the same SHA-256 in the upstream and
++  branded images: `cd949dab5bdc1c7158da06debd9fff493833eed581149cb7118c00fa71103c1e`;
++- a real DOCX opened through the existing WOPI host, was edited, saved into a
++  new immutable version, closed, and reopened with the edit present;
++- the active DOCX converted through `/cool/convert-to/pdf` to a valid,
++  visually inspected one-page PDF;
++- the second build reused the exported Docker and ccache data instead of
++  restarting from zero.
++
+ ## Licensing boundary
+ 
+ The upstream MPL-2.0 notices and source history stay intact. Ralue branding is

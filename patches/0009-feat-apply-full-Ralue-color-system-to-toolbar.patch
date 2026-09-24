@@ -1,0 +1,252 @@
+From a01e5907ee117476dbccd5675bd60f20d2016ef3 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Thu, 24 Sep 2026 18:04:17 +0200
+Subject: [PATCH 09/10] feat: apply full Ralue color system to toolbar
+
+---
+ browser/css/notebookbar.css           | 72 ++++++++++++++++++++++-----
+ docker/ralue/RALUE_APP_INTEGRATION.md |  2 +-
+ docker/ralue/README.md                |  8 +--
+ docker/ralue/build-online.sh          |  2 +-
+ docker/ralue/build.ps1                |  2 +-
+ docker/ralue/compose.staging.yml      |  2 +-
+ docker/ralue/compose.yml              |  2 +-
+ 7 files changed, 69 insertions(+), 21 deletions(-)
+
+diff --git a/browser/css/notebookbar.css b/browser/css/notebookbar.css
+index bc23278d..af975c25 100644
+--- a/browser/css/notebookbar.css
++++ b/browser/css/notebookbar.css
+@@ -6,7 +6,7 @@
+ 	overflow-y: hidden;
+ 	scrollbar-width: none;
+ 	-ms-overflow-style: none;
+-	background: linear-gradient(180deg, var(--color-main-background) 0%, color-mix(in srgb, var(--color-main-background) 94%, #f4f5f9) 100%);
++	background: linear-gradient(180deg, var(--color-main-background) 0%, color-mix(in srgb, var(--co-primary-element, #6c4cf5) 7%, var(--color-main-background)) 100%);
+ }
+ 
+ .notebookbar-scroll-wrapper::-webkit-scrollbar {
+@@ -259,11 +259,11 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ }
+ 
+ #toolbar-wrapper.hasnotebookbar {
+-	background: var(--color-main-background);
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 4%, var(--color-main-background));
+ 	position: relative;
+ 	z-index: 11;
+-	border-bottom: 1px solid color-mix(in srgb, var(--color-toolbar-border) 76%, transparent);
+-	box-shadow: 0 6px 18px color-mix(in srgb, #0f172a 7%, transparent);
++	border-bottom: 1px solid color-mix(in srgb, var(--co-primary-element, #6c4cf5) 22%, var(--color-toolbar-border));
++	box-shadow: 0 7px 20px color-mix(in srgb, var(--co-primary-element, #6c4cf5) 10%, transparent);
+ }
+ 
+ .notebookbar.horizontal.ui-overflow-manager {
+@@ -274,6 +274,10 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 	height: 82px;
+ }
+ 
++html:not([data-theme='dark']) .hasnotebookbar > #toolbar-row {
++	background: linear-gradient(105deg, #fbfaff 0%, #f3f0ff 52%, #faf9ff 100%);
++}
++
+ .vertical.notebookbar {
+ 	width: max-content;
+ 	display: grid;
+@@ -345,8 +349,10 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 
+ .hasnotebookbar .notebookbar.ui-overflow-group-container-with-label {
+ 	padding: 3px 6px 4px;
+-	border: 1px solid transparent;
++	border: 1px solid color-mix(in srgb, var(--co-primary-element, #6c4cf5) 14%, transparent);
+ 	border-radius: 11px;
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 4%, var(--color-main-background));
++	box-shadow: 0 3px 10px color-mix(in srgb, var(--co-primary-element, #6c4cf5) 6%, transparent);
+ 	transition: background-color 0.14s ease, border-color 0.14s ease;
+ }
+ 
+@@ -354,12 +360,41 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 	font-size: 9px;
+ 	font-weight: 650;
+ 	letter-spacing: 0.025em;
+-	color: color-mix(in srgb, var(--color-main-text) 56%, transparent);
++	color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 82%, #334155);
++}
++
++html:not([data-theme='dark']) .ui-overflow-manager > #home-clipboard,
++html:not([data-theme='dark']) .ui-overflow-manager > #home-font,
++html:not([data-theme='dark']) .ui-overflow-manager > #home-paragraph,
++html:not([data-theme='dark']) .ui-overflow-manager > #home-stylesview-group,
++html:not([data-theme='dark']) .ui-overflow-manager > #home-insert,
++html:not([data-theme='dark']) .ui-overflow-manager > #home-find-n-filter {
++	box-sizing: border-box;
++	padding-inline: 3px;
++	border: 1px solid color-mix(in srgb, var(--co-primary-element, #6c4cf5) 14%, transparent);
++	border-radius: 12px;
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 3%, #ffffff);
++	box-shadow: 0 3px 10px color-mix(in srgb, var(--co-primary-element, #6c4cf5) 7%, transparent);
++}
++
++html:not([data-theme='dark']) .ui-overflow-manager > #home-clipboard,
++html:not([data-theme='dark']) .ui-overflow-manager > #home-stylesview-group {
++	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 25%, transparent);
++	background: linear-gradient(180deg, #f7f5ff 0%, #ece7ff 100%);
++}
++
++html:not([data-theme='dark']) .ui-overflow-manager > #home-paragraph {
++	background: linear-gradient(180deg, #faf9ff 0%, #f0ecff 100%);
++}
++
++html:not([data-theme='dark']) .ui-overflow-manager > #home-insert,
++html:not([data-theme='dark']) .ui-overflow-manager > #home-find-n-filter {
++	background: linear-gradient(180deg, #fbfaff 0%, #f3efff 100%);
+ }
+ 
+ .hasnotebookbar .notebookbar.ui-overflow-group-container-with-label:hover {
+-	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 9%, transparent);
+-	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 2.5%, var(--color-main-background));
++	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 25%, transparent);
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 8%, var(--color-main-background));
+ }
+ 
+ .hasnotebookbar .unotoolbutton.notebookbar .unobutton:hover,
+@@ -372,11 +407,24 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ }
+ 
+ html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar .unobutton > img {
+-	filter: grayscale(1) saturate(.15) contrast(.88);
+-	opacity: .82;
++	filter: invert(35%) sepia(80%) saturate(1550%) hue-rotate(226deg) brightness(87%) contrast(101%);
++	opacity: .9;
+ 	transition: filter 0.13s ease, opacity 0.13s ease;
+ }
+ 
++html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar .unobutton {
++	color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 82%, #1f2937);
++}
++
++html:not([data-theme='dark']) #home-clipboard .unobutton,
++html:not([data-theme='dark']) #home-paragraph .unobutton,
++html:not([data-theme='dark']) #home-stylesview-group .unobutton,
++html:not([data-theme='dark']) #home-insert .unobutton,
++html:not([data-theme='dark']) #home-find-n-filter .unobutton {
++	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 13%, transparent);
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 8%, transparent);
++}
++
+ html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar .unobutton:hover > img,
+ html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar.selected .unobutton > img {
+ 	filter: invert(37%) sepia(79%) saturate(2018%) hue-rotate(233deg) brightness(94%) contrast(104%);
+@@ -386,10 +434,10 @@ html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar.selecte
+ .hasnotebookbar .notebookbar.ui-combobox,
+ .hasnotebookbar .notebookbar.ui-listbox,
+ .hasnotebookbar .notebookbar.ui-spinfields {
+-	border-color: color-mix(in srgb, var(--color-toolbar-border) 72%, transparent);
++	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 24%, var(--color-toolbar-border));
+ 	border-radius: 9px;
+ 	background: var(--color-main-background);
+-	box-shadow: 0 1px 2px color-mix(in srgb, #0f172a 4%, transparent);
++	box-shadow: 0 2px 6px color-mix(in srgb, var(--co-primary-element, #6c4cf5) 7%, transparent);
+ }
+ 
+ .unotoolbutton.notebookbar .unobutton::after {
+diff --git a/docker/ralue/RALUE_APP_INTEGRATION.md b/docker/ralue/RALUE_APP_INTEGRATION.md
+index 7bb50923..c6dc1925 100644
+--- a/docker/ralue/RALUE_APP_INTEGRATION.md
++++ b/docker/ralue/RALUE_APP_INTEGRATION.md
+@@ -28,7 +28,7 @@ the Ralue names.
+ The Career Hub application integration is intentionally small:
+ 
+ - `next.config.js`: prefer Ralue origins and expose the branded proxy alias;
+-- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.7` as `ralue-editor`;
++- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.9` as `ralue-editor`;
+ - `app/pdf-editor/[key]/page.tsx` and `app/cover-letter/[key]/page.tsx`: prefer
+   the Ralue public origin and use the Ralue purple CSS variable;
+ - `app/api/preview/pdf/route.ts`: use the server-side Ralue origin for PDF
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index f805dd66..f9cd604a 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -9,7 +9,7 @@ commit in `UPSTREAM.lock`.
+ - `ralue-upstream-26.04.2.4`: immutable upstream source before Ralue changes.
+ - `ralue/mvp-editor`: working branch for the branded editor.
+ - `ralue/editor:upstream-26.04.2.4`: locally compiled, unmodified baseline.
+-- `ralue/editor:mvp-26.04.2.7`: branded MVP with the modern Ralue toolbar and stable Writer zoom.
++- `ralue/editor:mvp-26.04.2.9`: branded MVP with the full-color Ralue toolbar and stable Writer zoom.
+ 
+ ## Build and resume
+ 
+@@ -23,7 +23,7 @@ Docker BuildKit caches downloads, npm dependencies, and completed build layers.
+ If a stage fails, correct it and run the same command; completed stages are not
+ rebuilt. A durable export of the cache is kept under `.build-progress/cache`.
+ 
+-Browser assets use the hexadecimal Ralue revision `a42b7e91c6`, separate from the pinned
++Browser assets use the hexadecimal Ralue revision `c84e02f6a1`, separate from the pinned
+ upstream engine hash. Bump this revision for each deployable UI release so
+ browsers never reuse bundles from an older editor build.
+ 
+@@ -90,7 +90,7 @@ After deployment, verify all three routes through the public hostname:
+ ```text
+ /hosting/discovery
+ /hosting/capabilities
+-/browser/a42b7e91c6/cool.html
++/browser/c84e02f6a1/cool.html
+ ```
+ 
+ Then run an authenticated open, edit, save, close, and reopen test through the
+@@ -115,7 +115,7 @@ Validated locally on 2026-09-23:
+ 
+ - discovery, capabilities, logo, favicon, and browser bundle returned HTTP 200;
+ - product name is `Ralue Editor`, source version is `26.04.2.4`, and the
+-  deployable browser revision is `a42b7e91c6`;
++  deployable browser revision is `c84e02f6a1`;
+ - the engine binary `libmergedlo.so` has the same SHA-256 in the upstream and
+   branded images: `cd949dab5bdc1c7158da06debd9fff493833eed581149cb7118c00fa71103c1e`;
+ - a real DOCX opened through the existing WOPI host, was edited, saved into a
+diff --git a/docker/ralue/build-online.sh b/docker/ralue/build-online.sh
+index d38298fd..8d644d86 100644
+--- a/docker/ralue/build-online.sh
++++ b/docker/ralue/build-online.sh
+@@ -10,7 +10,7 @@ set -Eeuo pipefail
+ readonly source_dir=/src
+ readonly stage_dir=/stage
+ readonly poco_prefix=/opt/ralue-poco
+-readonly online_hash=a42b7e91c6
++readonly online_hash=c84e02f6a1
+ readonly max_connections="${RALUE_MAX_CONNECTIONS:-1000000}"
+ readonly max_documents="${RALUE_MAX_DOCUMENTS:-1000000}"
+ 
+diff --git a/docker/ralue/build.ps1 b/docker/ralue/build.ps1
+index caa9b2f3..cd941d71 100644
+--- a/docker/ralue/build.ps1
++++ b/docker/ralue/build.ps1
+@@ -1,5 +1,5 @@
+ param(
+-    [string]$Tag = "ralue/editor:mvp-26.04.2.7",
++    [string]$Tag = "ralue/editor:mvp-26.04.2.9",
+     [int]$Jobs = 0
+ )
+ 
+diff --git a/docker/ralue/compose.staging.yml b/docker/ralue/compose.staging.yml
+index 6e3f5045..2e99bd5f 100644
+--- a/docker/ralue/compose.staging.yml
++++ b/docker/ralue/compose.staging.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.7
++    image: ralue/editor:mvp-26.04.2.9
+     container_name: ralue-editor-staging
+     restart: unless-stopped
+     init: true
+diff --git a/docker/ralue/compose.yml b/docker/ralue/compose.yml
+index 197885cc..1f7c8de7 100644
+--- a/docker/ralue/compose.yml
++++ b/docker/ralue/compose.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.7
++    image: ralue/editor:mvp-26.04.2.9
+     container_name: ralue-editor
+     restart: unless-stopped
+     ports:

@@ -1,0 +1,409 @@
+From 872d445f5c30f2e865a4cbecb7d5150ffac714e7 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Thu, 24 Sep 2026 17:29:18 +0200
+Subject: [PATCH 08/10] feat: modernize toolbar and stabilize Writer zoom
+
+---
+ browser/css/notebookbar.css                   | 85 ++++++++++++-------
+ browser/src/control/Control.NavigatorPanel.ts |  5 +-
+ browser/src/map/Map.js                        | 13 ++-
+ browser/src/map/handler/Map.Scroll.js         | 26 +++---
+ docker/ralue/RALUE_APP_INTEGRATION.md         |  2 +-
+ docker/ralue/README.md                        |  8 +-
+ docker/ralue/build-online.sh                  |  2 +-
+ docker/ralue/build.ps1                        |  2 +-
+ docker/ralue/compose.staging.yml              |  2 +-
+ docker/ralue/compose.yml                      |  2 +-
+ 10 files changed, 90 insertions(+), 57 deletions(-)
+
+diff --git a/browser/css/notebookbar.css b/browser/css/notebookbar.css
+index 91297d71..bc23278d 100644
+--- a/browser/css/notebookbar.css
++++ b/browser/css/notebookbar.css
+@@ -6,6 +6,7 @@
+ 	overflow-y: hidden;
+ 	scrollbar-width: none;
+ 	-ms-overflow-style: none;
++	background: linear-gradient(180deg, var(--color-main-background) 0%, color-mix(in srgb, var(--color-main-background) 94%, #f4f5f9) 100%);
+ }
+ 
+ .notebookbar-scroll-wrapper::-webkit-scrollbar {
+@@ -55,14 +56,17 @@ span.notebookbar.static-label,
+ .notebookbar-tabs-container {
+ 	display: inline-flex;
+ 	flex: 1 1 auto;
+-	margin-inline-start: 8px;
++	margin-inline-start: 10px;
++	align-items: center;
+ }
+ 
+ .ui-tabs.notebookbar {
+ 	display: inline-flex;
+ 	z-index: 999;
+-	padding: 0px;
++	gap: 3px;
++	padding: 0;
+ 	height: 100%;
++	align-items: center;
+ }
+ 
+ .notebookbar#NotebookBar {
+@@ -71,14 +75,14 @@ span.notebookbar.static-label,
+ 
+ button.ui-tab.notebookbar {
+ 	box-sizing: border-box;
+-	height: 30px;
++	height: 31px;
+ 	display: flex;
+ 	align-items: center;
+ 	justify-content: center;
+-	padding: 0 clamp(8px, 1.2vw, 16px);
++	padding: 0 clamp(9px, 1.1vw, 14px);
+ 	border: 1px solid transparent;
+ 	background-color: transparent;
+-	border-radius: 8px 8px 0 0;
++	border-radius: 9px;
+ 	/* calc([minimum size]
+ 	   + ([maximum size] - [minimum size])
+ 	   * ((100vw - [minimum viewport width]) / ([maximum viewport width] - [minimum viewport width]))); */
+@@ -86,8 +90,11 @@ button.ui-tab.notebookbar {
+ 	/* a minimum value, a preferred value or scaler, and a maximum allowed value. */
+ 	font-size: clamp(var(--tb-min-fs), var(--tb-fs-s), var(--tb-max-fs));
+ 	font-family: var(--cool-font);
++	font-weight: 600;
++	letter-spacing: -0.01em;
+ 	line-height: normal;
+-	color: var(--color-main-text);
++	color: color-mix(in srgb, var(--color-main-text) 76%, #64748b);
++	transition: color 0.14s ease, background-color 0.14s ease, box-shadow 0.14s ease;
+ }
+ 
+ #shareas {
+@@ -109,13 +116,12 @@ button.ui-tab.notebookbar {
+ .ui-tab.selected.notebookbar {
+ 	border: 1px solid transparent !important;
+ 	color: var(--co-primary-element, #6c4cf5) !important;
+-	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 10%, var(--color-main-background));
+-	box-shadow: inset 0 -2px var(--co-primary-element, #6c4cf5);
+-	transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 11%, var(--color-main-background));
++	box-shadow: inset 0 -2px var(--co-primary-element, #6c4cf5), 0 1px 2px color-mix(in srgb, var(--co-primary-element, #6c4cf5) 9%, transparent);
+ }
+ 
+ .ui-tab.selected.notebookbar:hover {
+-	box-shadow: inset 0 -2px var(--co-primary-element, #6c4cf5);
++	box-shadow: inset 0 -2px var(--co-primary-element, #6c4cf5), 0 2px 5px color-mix(in srgb, var(--co-primary-element, #6c4cf5) 12%, transparent);
+ 	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 14%, var(--color-main-background));
+ }
+ 
+@@ -128,9 +134,9 @@ button.ui-tab.notebookbar {
+ 
+ .ui-tab.notebookbar:hover {
+ 	cursor: pointer !important;
+-	color: var(--color-text-darker) !important;
+-	box-shadow: inset 0 -2px var(--color-border);
+-	background: var(--color-background-lighter);
++	color: var(--co-primary-element, #6c4cf5) !important;
++	box-shadow: none;
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 7%, var(--color-main-background));
+ }
+ 
+ /* Document Logo */
+@@ -253,15 +259,15 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ }
+ 
+ #toolbar-wrapper.hasnotebookbar {
+-	background: var(--color-background-lighter);
++	background: var(--color-main-background);
+ 	position: relative;
+ 	z-index: 11;
+-	border-bottom: 1px solid var(--color-border-lighter);
+-	box-shadow: 0 4px 14px color-mix(in srgb, var(--color-main-text) 6%, transparent);
++	border-bottom: 1px solid color-mix(in srgb, var(--color-toolbar-border) 76%, transparent);
++	box-shadow: 0 6px 18px color-mix(in srgb, #0f172a 7%, transparent);
+ }
+ 
+ .notebookbar.horizontal.ui-overflow-manager {
+-	padding-inline-start: 5px;
++	padding-inline: 8px 10px;
+ }
+ 
+ .hasnotebookbar > #toolbar-row {
+@@ -278,15 +284,15 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ .notebookbar.ui-separator.vertical {
+ 	width: 1px;
+ 	background-color: color-mix(in srgb, var(--color-toolbar-border) 72%, transparent);
+-	height: 42px;
+-	margin: 0 6px;
++	height: 48px;
++	margin: 0 5px;
+ 	box-sizing: border-box;
+ }
+ 
+ .horizontal.notebookbar {
+ 	display: grid;
+ 	grid-auto-flow: column;
+-	grid-gap: 3px;
++	grid-gap: 4px;
+ 	align-items: center;
+ 	justify-items: center;
+ 	width: max-content;
+@@ -334,37 +340,56 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 	position: relative;
+ 	justify-content: center;
+ 	align-items: center;
++	transition: color 0.13s ease, background-color 0.13s ease, border-color 0.13s ease, box-shadow 0.13s ease, transform 0.13s ease;
+ }
+ 
+ .hasnotebookbar .notebookbar.ui-overflow-group-container-with-label {
+-	padding: 2px 5px 3px;
+-	border-radius: 10px;
++	padding: 3px 6px 4px;
++	border: 1px solid transparent;
++	border-radius: 11px;
++	transition: background-color 0.14s ease, border-color 0.14s ease;
+ }
+ 
+ .hasnotebookbar .notebookbar.ui-overflow-group-label {
+ 	font-size: 9px;
+-	font-weight: 600;
+-	letter-spacing: 0.02em;
++	font-weight: 650;
++	letter-spacing: 0.025em;
+ 	color: color-mix(in srgb, var(--color-main-text) 56%, transparent);
+ }
+ 
+-.hasnotebookbar #home-font.ui-overflow-group-container-with-label {
+-	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 4%, var(--color-main-background));
++.hasnotebookbar .notebookbar.ui-overflow-group-container-with-label:hover {
++	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 9%, transparent);
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 2.5%, var(--color-main-background));
+ }
+ 
+ .hasnotebookbar .unotoolbutton.notebookbar .unobutton:hover,
+ .hasnotebookbar .unotoolbutton.notebookbar.selected .unobutton {
+ 	color: var(--co-primary-element, #6c4cf5);
+-	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 10%, var(--color-main-background));
+-	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 16%, transparent);
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 11%, var(--color-main-background));
++	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 20%, transparent);
++	box-shadow: 0 2px 7px color-mix(in srgb, var(--co-primary-element, #6c4cf5) 9%, transparent);
++	transform: translateY(-1px);
++}
++
++html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar .unobutton > img {
++	filter: grayscale(1) saturate(.15) contrast(.88);
++	opacity: .82;
++	transition: filter 0.13s ease, opacity 0.13s ease;
++}
++
++html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar .unobutton:hover > img,
++html:not([data-theme='dark']) .hasnotebookbar .unotoolbutton.notebookbar.selected .unobutton > img {
++	filter: invert(37%) sepia(79%) saturate(2018%) hue-rotate(233deg) brightness(94%) contrast(104%);
++	opacity: 1;
+ }
+ 
+ .hasnotebookbar .notebookbar.ui-combobox,
+ .hasnotebookbar .notebookbar.ui-listbox,
+ .hasnotebookbar .notebookbar.ui-spinfields {
+-	border-color: color-mix(in srgb, var(--color-toolbar-border) 82%, transparent);
+-	border-radius: 8px;
++	border-color: color-mix(in srgb, var(--color-toolbar-border) 72%, transparent);
++	border-radius: 9px;
+ 	background: var(--color-main-background);
++	box-shadow: 0 1px 2px color-mix(in srgb, #0f172a 4%, transparent);
+ }
+ 
+ .unotoolbutton.notebookbar .unobutton::after {
+diff --git a/browser/src/control/Control.NavigatorPanel.ts b/browser/src/control/Control.NavigatorPanel.ts
+index e5694e68..806c0c01 100644
+--- a/browser/src/control/Control.NavigatorPanel.ts
++++ b/browser/src/control/Control.NavigatorPanel.ts
+@@ -102,8 +102,9 @@ class NavigatorPanel extends SidebarBase {
+ 		);
+ 		navContainer.id = 'navigation-options-wrapper';
+ 
+-		// For calc we do not need to add floating icon
+-		if (docType !== 'spreadsheet') {
++		// Ralue keeps Writer's canvas focused on the document. Navigator remains
++		// available from View, but its floating compass is unnecessary there.
++		if (docType !== 'spreadsheet' && docType !== 'text') {
+ 			// Create floating navigation button
+ 			this.createFloatingNavigatorBtn();
+ 
+diff --git a/browser/src/map/Map.js b/browser/src/map/Map.js
+index a3a265a7..94686c12 100644
+--- a/browser/src/map/Map.js
++++ b/browser/src/map/Map.js
+@@ -732,6 +732,12 @@ window.L.Map = window.L.Evented.extend({
+ 			['ViewLayoutMultiPage', 'ViewLayoutCompareChanges'].includes(app.activeDocument.activeLayout.type))
+ 			animate = false;
+ 
++		// Writer's animation renders an intermediate frame before its layout has
++		// recentered the page. A direct zoom is visually steadier and avoids the
++		// document flashing against the left edge of the canvas.
++		if (animate && this._docLayer && this._docLayer._docType === 'text')
++			animate = false;
++
+ 		var curCenter = this.getCenter();
+ 		if (this._docLayer && this._docLayer._docType === 'spreadsheet') {
+ 			// for spreadsheets, when the document is smaller than the viewing area
+@@ -747,7 +753,12 @@ window.L.Map = window.L.Evented.extend({
+ 		var cssBounds = this.getPixelBounds();
+ 		var mapUpdater;
+ 		var runAtFinish;
+-		if (this._docLayer && app.file.textCursor.visible && app.activeDocument.activeLayout.viewedRectangle.containsPoint(app.file.textCursor.rectangle.center)) {
++		// Writer keeps the page horizontally centred. Anchoring an animated zoom
++		// to the caret first moves the page towards the caret and the Writer
++		// layout then recentres it, which produces a visible sideways jump. Keep
++		// caret-anchored zoom for the document types that need it, but let Writer
++		// use the stable viewport centre below.
++		if (this._docLayer && this._docLayer._docType !== 'text' && app.file.textCursor.visible && app.activeDocument.activeLayout.viewedRectangle.containsPoint(app.file.textCursor.rectangle.center)) {
+ 			// Calculate new center after zoom. The intent is that the caret
+ 			// position stays the same.
+ 			var zoomScale = 1.0 / this.getZoomScale(zoom, this._zoom);
+diff --git a/browser/src/map/handler/Map.Scroll.js b/browser/src/map/handler/Map.Scroll.js
+index 04344522..c4348784 100644
+--- a/browser/src/map/handler/Map.Scroll.js
++++ b/browser/src/map/handler/Map.Scroll.js
+@@ -47,18 +47,10 @@ window.L.Map.Scroll = window.L.Handler.extend({
+ 		if (docLayer && docLayer.isCalc()) {
+ 			this._zoomCenter = mousePos;
+ 		} else if (docLayer && docLayer.isWriter()) {
+-			// Preserve the y coordinate position of the document where the mouse is.
+-			// Also preserve x coordinate if the current view does not have margins.
+-			//  If view has margins, we cannot center w.r.t arbitrary position in the page because
+-			//  writer will eventually re-adjust page to the view's center after setting map zoom.
+-			var part = docLayer._currentPage;
+-			var rectangle = app.file.writer.pageRectangleList[part];
+-			var minX = Math.round(rectangle[0] * app.twipsToPixels);
+-			var maxX = minX + Math.round(rectangle[2] * app.twipsToPixels);
+-			var viewBounds = this._map.getPixelBoundsCore();
+-			var useMouseXCenter = viewBounds.min.x >= 0 && viewBounds.max.x <= maxX;
+-
+-			this._zoomCenter = InternPointUtil.flexConstruct(useMouseXCenter ? mousePos.x : viewCenter.x, mousePos.y);
++			// Writer zoom follows the pointer vertically but remains locked to the
++			// current horizontal centre. This prevents the page drifting left/right
++			// while still making long documents pleasant to navigate.
++			this._zoomCenter = InternPointUtil.flexConstruct(viewCenter.x, mousePos.y);
+ 
+ 		} else {
+ 			this._zoomCenter = viewCenter;
+@@ -119,9 +111,13 @@ window.L.Map.Scroll = window.L.Handler.extend({
+ 
+ 		this._stopZoomInterpolateRAFAt = this._zoomScrollTime.valueOf() + this._map.options.wheelZoomStepEndAfter;
+ 
+-		// In multi-page or compare changes view, skip animation and zoom directly.
+-		if (app.activeDocument && app.activeDocument.activeLayout &&
+-			['ViewLayoutMultiPage', 'ViewLayoutCompareChanges'].includes(app.activeDocument.activeLayout.type)) {
++		// Writer's interpolated frames briefly render the document against the
++		// left edge before its layout recentres it. Zoom Writer directly so the
++		// page remains horizontally stable throughout the interaction.
++		const directZoom = map._docLayer && map._docLayer.isWriter();
++		const nonAnimatedLayout = app.activeDocument && app.activeDocument.activeLayout &&
++			['ViewLayoutMultiPage', 'ViewLayoutCompareChanges'].includes(app.activeDocument.activeLayout.type);
++		if (directZoom || nonAnimatedLayout) {
+ 			map.setZoom(this._zoom, null, false);
+ 			this._zoomScrollTime = undefined;
+ 			return;
+diff --git a/docker/ralue/RALUE_APP_INTEGRATION.md b/docker/ralue/RALUE_APP_INTEGRATION.md
+index e309d0a1..7bb50923 100644
+--- a/docker/ralue/RALUE_APP_INTEGRATION.md
++++ b/docker/ralue/RALUE_APP_INTEGRATION.md
+@@ -28,7 +28,7 @@ the Ralue names.
+ The Career Hub application integration is intentionally small:
+ 
+ - `next.config.js`: prefer Ralue origins and expose the branded proxy alias;
+-- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.6` as `ralue-editor`;
++- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.7` as `ralue-editor`;
+ - `app/pdf-editor/[key]/page.tsx` and `app/cover-letter/[key]/page.tsx`: prefer
+   the Ralue public origin and use the Ralue purple CSS variable;
+ - `app/api/preview/pdf/route.ts`: use the server-side Ralue origin for PDF
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index 750d7e4e..f805dd66 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -9,7 +9,7 @@ commit in `UPSTREAM.lock`.
+ - `ralue-upstream-26.04.2.4`: immutable upstream source before Ralue changes.
+ - `ralue/mvp-editor`: working branch for the branded editor.
+ - `ralue/editor:upstream-26.04.2.4`: locally compiled, unmodified baseline.
+-- `ralue/editor:mvp-26.04.2.6`: branded MVP with the complete Ralue toolbar.
++- `ralue/editor:mvp-26.04.2.7`: branded MVP with the modern Ralue toolbar and stable Writer zoom.
+ 
+ ## Build and resume
+ 
+@@ -23,7 +23,7 @@ Docker BuildKit caches downloads, npm dependencies, and completed build layers.
+ If a stage fails, correct it and run the same command; completed stages are not
+ rebuilt. A durable export of the cache is kept under `.build-progress/cache`.
+ 
+-Browser assets use the hexadecimal Ralue revision `d82f06a1b4`, separate from the pinned
++Browser assets use the hexadecimal Ralue revision `a42b7e91c6`, separate from the pinned
+ upstream engine hash. Bump this revision for each deployable UI release so
+ browsers never reuse bundles from an older editor build.
+ 
+@@ -90,7 +90,7 @@ After deployment, verify all three routes through the public hostname:
+ ```text
+ /hosting/discovery
+ /hosting/capabilities
+-/browser/d82f06a1b4/cool.html
++/browser/a42b7e91c6/cool.html
+ ```
+ 
+ Then run an authenticated open, edit, save, close, and reopen test through the
+@@ -115,7 +115,7 @@ Validated locally on 2026-09-23:
+ 
+ - discovery, capabilities, logo, favicon, and browser bundle returned HTTP 200;
+ - product name is `Ralue Editor`, source version is `26.04.2.4`, and the
+-  deployable browser revision is `d82f06a1b4`;
++  deployable browser revision is `a42b7e91c6`;
+ - the engine binary `libmergedlo.so` has the same SHA-256 in the upstream and
+   branded images: `cd949dab5bdc1c7158da06debd9fff493833eed581149cb7118c00fa71103c1e`;
+ - a real DOCX opened through the existing WOPI host, was edited, saved into a
+diff --git a/docker/ralue/build-online.sh b/docker/ralue/build-online.sh
+index 13e4e9cb..d38298fd 100644
+--- a/docker/ralue/build-online.sh
++++ b/docker/ralue/build-online.sh
+@@ -10,7 +10,7 @@ set -Eeuo pipefail
+ readonly source_dir=/src
+ readonly stage_dir=/stage
+ readonly poco_prefix=/opt/ralue-poco
+-readonly online_hash=d82f06a1b4
++readonly online_hash=a42b7e91c6
+ readonly max_connections="${RALUE_MAX_CONNECTIONS:-1000000}"
+ readonly max_documents="${RALUE_MAX_DOCUMENTS:-1000000}"
+ 
+diff --git a/docker/ralue/build.ps1 b/docker/ralue/build.ps1
+index 6b6e944c..caa9b2f3 100644
+--- a/docker/ralue/build.ps1
++++ b/docker/ralue/build.ps1
+@@ -1,5 +1,5 @@
+ param(
+-    [string]$Tag = "ralue/editor:mvp-26.04.2.6",
++    [string]$Tag = "ralue/editor:mvp-26.04.2.7",
+     [int]$Jobs = 0
+ )
+ 
+diff --git a/docker/ralue/compose.staging.yml b/docker/ralue/compose.staging.yml
+index 9f1f56e3..6e3f5045 100644
+--- a/docker/ralue/compose.staging.yml
++++ b/docker/ralue/compose.staging.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.6
++    image: ralue/editor:mvp-26.04.2.7
+     container_name: ralue-editor-staging
+     restart: unless-stopped
+     init: true
+diff --git a/docker/ralue/compose.yml b/docker/ralue/compose.yml
+index ec977066..197885cc 100644
+--- a/docker/ralue/compose.yml
++++ b/docker/ralue/compose.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.6
++    image: ralue/editor:mvp-26.04.2.7
+     container_name: ralue-editor
+     restart: unless-stopped
+     ports:

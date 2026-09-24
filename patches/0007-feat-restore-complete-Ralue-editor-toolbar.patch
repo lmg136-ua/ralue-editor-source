@@ -1,0 +1,391 @@
+From 80990210276bfecc861e5d535fdb15b675769c81 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Thu, 24 Sep 2026 16:42:28 +0200
+Subject: [PATCH 07/10] feat: restore complete Ralue editor toolbar
+
+---
+ OPEN_SOURCE_RELEASE.md                        | 34 ++++++++++++++++
+ browser/css/notebookbar.css                   | 34 +++++++++++++---
+ .../src/control/Control.NotebookbarWriter.js  | 39 ++++++++++++++++++-
+ docker/ralue/Dockerfile                       | 11 +++++-
+ docker/ralue/RALUE_APP_INTEGRATION.md         |  2 +-
+ docker/ralue/README.md                        | 12 +++---
+ docker/ralue/build-online.sh                  | 12 +++++-
+ docker/ralue/build.ps1                        |  2 +-
+ docker/ralue/compose.staging.yml              |  2 +-
+ docker/ralue/compose.yml                      |  2 +-
+ 10 files changed, 131 insertions(+), 19 deletions(-)
+ create mode 100644 OPEN_SOURCE_RELEASE.md
+
+diff --git a/OPEN_SOURCE_RELEASE.md b/OPEN_SOURCE_RELEASE.md
+new file mode 100644
+index 00000000..104e1a57
+--- /dev/null
++++ b/OPEN_SOURCE_RELEASE.md
+@@ -0,0 +1,34 @@
++# Ralue Editor open-source release obligations
++
++Ralue Editor is a modified distribution of Collabora Online source covered
++primarily by the Mozilla Public License 2.0 (MPL-2.0). This file is an
++engineering release checklist, not legal advice.
++
++Before a public binary or hosted client bundle is released:
++
++1. Publish the corresponding Ralue Editor source revision, including every
++   modified MPL-covered file, under MPL-2.0.
++2. Keep `COPYING`, `README.FILENOTICES.md`, per-file SPDX notices, copyright
++   notices, source history, and the third-party notices in `browser/LICENSE`.
++3. Put a durable source-code link on the download/release page and on the
++   public open-source notice page. The link must identify the exact source tag
++   matching the distributed image and browser revision.
++4. Do not use Collabora names, logos, product marks, or domains as Ralue's
++   product identity. Historical attribution and license notices must remain.
++5. Publish image provenance: upstream engine digest, Ralue image digest,
++   source tag, browser revision, license identifier, and build instructions.
++6. Run the trademark scan and a clean source build before release; review any
++   remaining runtime-facing Collabora marks. Source comments, history, and
++   factual attribution are not product branding and must not be stripped.
++7. Keep the proprietary Career Hub application separate from the MPL source
++   release. New files that contain no MPL-covered code are not automatically
++   required to use MPL merely because they communicate with Ralue Editor.
++
++The release is not compliant merely because the repository exists: the source
++link must be available to recipients of the matching executable/client bundle.
++
++Authoritative references:
++
++- https://www.mozilla.org/MPL/2.0/
++- https://www.mozilla.org/MPL/2.0/FAQ/
++- https://www.collaboraonline.com/trademark-policy/
+diff --git a/browser/css/notebookbar.css b/browser/css/notebookbar.css
+index 2b6f35cb..91297d71 100644
+--- a/browser/css/notebookbar.css
++++ b/browser/css/notebookbar.css
+@@ -1,11 +1,15 @@
+ 
+ .notebookbar-scroll-wrapper {
+-	height: 70px;
++	height: 82px;
+ 	display: flex;
+ 	overflow-x: auto;
+ 	overflow-y: hidden;
+-	scrollbar-color: var(--scrollbar-color);
+-	scrollbar-width: var(--scrollbar-width);
++	scrollbar-width: none;
++	-ms-overflow-style: none;
++}
++
++.notebookbar-scroll-wrapper::-webkit-scrollbar {
++	display: none;
+ }
+ 
+ /* stretch the fields */
+@@ -62,7 +66,7 @@ span.notebookbar.static-label,
+ }
+ 
+ .notebookbar#NotebookBar {
+-	height: 70px;
++	height: 82px;
+ }
+ 
+ button.ui-tab.notebookbar {
+@@ -261,7 +265,7 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ }
+ 
+ .hasnotebookbar > #toolbar-row {
+-	height: 70px;
++	height: 82px;
+ }
+ 
+ .vertical.notebookbar {
+@@ -273,7 +277,7 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 
+ .notebookbar.ui-separator.vertical {
+ 	width: 1px;
+-	background-color: var(--color-toolbar-border);
++	background-color: color-mix(in srgb, var(--color-toolbar-border) 72%, transparent);
+ 	height: 42px;
+ 	margin: 0 6px;
+ 	box-sizing: border-box;
+@@ -332,6 +336,22 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 	align-items: center;
+ }
+ 
++.hasnotebookbar .notebookbar.ui-overflow-group-container-with-label {
++	padding: 2px 5px 3px;
++	border-radius: 10px;
++}
++
++.hasnotebookbar .notebookbar.ui-overflow-group-label {
++	font-size: 9px;
++	font-weight: 600;
++	letter-spacing: 0.02em;
++	color: color-mix(in srgb, var(--color-main-text) 56%, transparent);
++}
++
++.hasnotebookbar #home-font.ui-overflow-group-container-with-label {
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 4%, var(--color-main-background));
++}
++
+ .hasnotebookbar .unotoolbutton.notebookbar .unobutton:hover,
+ .hasnotebookbar .unotoolbutton.notebookbar.selected .unobutton {
+ 	color: var(--co-primary-element, #6c4cf5);
+@@ -342,7 +362,9 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ .hasnotebookbar .notebookbar.ui-combobox,
+ .hasnotebookbar .notebookbar.ui-listbox,
+ .hasnotebookbar .notebookbar.ui-spinfields {
++	border-color: color-mix(in srgb, var(--color-toolbar-border) 82%, transparent);
+ 	border-radius: 8px;
++	background: var(--color-main-background);
+ }
+ 
+ .unotoolbutton.notebookbar .unobutton::after {
+diff --git a/browser/src/control/Control.NotebookbarWriter.js b/browser/src/control/Control.NotebookbarWriter.js
+index b4f7ec43..d9903a27 100644
+--- a/browser/src/control/Control.NotebookbarWriter.js
++++ b/browser/src/control/Control.NotebookbarWriter.js
+@@ -58,12 +58,25 @@ window.L.Control.NotebookbarWriter = window.L.Control.Notebookbar.extend({
+ 				'name': layoutTabName,
+ 				'accessibility': { focusBack: true, combination: 'P', de: 'S' }
+ 			},
++			JSDialog.WriterReferencesTab.getEntry(),
++			{
++				'text': _('Review'),
++				'id': reviewTabName + '-tab-label',
++				'name': reviewTabName,
++				'accessibility': { focusBack: true, combination: 'R', de: 'P' }
++			},
+ 			{
+ 				'text': _('Format'),
+ 				'id': formatTabName + '-tab-label',
+ 				'name': formatTabName,
+ 				'accessibility': { focusBack: true, combination: 'O' }
+ 			},
++			{
++				'text': _('Form'),
++				'id': formTabName + '-tab-label',
++				'name': formTabName,
++				'accessibility': { focusBack: true, combination: 'M' }
++			},
+ 			JSDialog.WriterTableTab.getEntry(),
+ 			{
+ 				'text': _('Shape'),
+@@ -86,6 +99,24 @@ window.L.Control.NotebookbarWriter = window.L.Control.Notebookbar.extend({
+ 				'context': 'Chart|Series|ErrorBar|Axis|Grid|ChartElements|Trendline|ChartTitle|ChartLegend|ChartLabel',
+ 				'accessibility': { focusBack: true, combination: 'CH', de: 'CH' }
+ 			},
++			{
++				'text': _('View'),
++				'id': viewTabName + '-tab-label',
++				'name': viewTabName,
++				'accessibility': { focusBack: true, combination: 'W', de: 'F' }
++			},
++			{
++				'text': _('Extensions'),
++				'id': 'Extensions-tab-label',
++				'name': 'Extensions',
++				'accessibility': { focusBack: true, combination: 'X' }
++			},
++			{
++				'text': _('Help'),
++				'id': helpTabName + '-tab-label',
++				'name': helpTabName,
++				'accessibility': { focusBack: true, combination: 'Y', de: 'E' }
++			},
+ 			{
+ 				'text': _('Formula'),
+ 				'id': formulaTabName + '-tab-label',
+@@ -102,11 +133,17 @@ window.L.Control.NotebookbarWriter = window.L.Control.Notebookbar.extend({
+ 			this.getHomeTab(),
+ 			this.getInsertTab(),
+ 			this.getLayoutTab(),
++			this.getReferencesTab(),
++			this.getReviewTab(),
+ 			this.getFormatTab(),
++			this.getFormTab(),
+ 			this.getTableTab(),
+ 			this.getShapeTab(),
+ 			this.getPictureTab(),
+ 			this.getChartTab(),
++			this.getViewTab(),
++			this.getExtensionsTab(),
++			this.getHelpTab(),
+ 			this.getFormulaTab()
+ 		]);
+ 	},
+@@ -645,6 +682,7 @@ window.L.Control.NotebookbarWriter = window.L.Control.Notebookbar.extend({
+ 				'type': 'overflowgroup',
+ 				'id': 'home-font',
+ 				'name': _('Font'),
++				'nofold': true,
+ 				'more': {
+ 					'command':'.uno:FontDialog',
+ 					'accessibility': { focusBack: true,	combination: 'MF', de: null },
+@@ -918,7 +956,6 @@ window.L.Control.NotebookbarWriter = window.L.Control.Notebookbar.extend({
+ 			{
+ 			   'type': 'overflowgroup',
+ 			   'id': 'home-stylesview-group',
+-			   'nofold': true,
+ 			   'name':_('Styles'),
+ 			   'children' : [
+ 					{
+diff --git a/docker/ralue/Dockerfile b/docker/ralue/Dockerfile
+index ae2c2d52..b25b0216 100644
+--- a/docker/ralue/Dockerfile
++++ b/docker/ralue/Dockerfile
+@@ -1,4 +1,9 @@
+ # syntax=docker/dockerfile:1.7
++# SPDX-License-Identifier: MPL-2.0
++#
++# This Source Code Form is subject to the terms of the Mozilla Public
++# License, v. 2.0. If a copy of the MPL was not distributed with this
++# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ 
+ ARG UPSTREAM_ENGINE_IMAGE=collabora/code:26.04.2.4.1@sha256:1f864ce3f0c49e867787b6dd303bd6ba989542d3023f6809df558eafd04c1b97
+ FROM ${UPSTREAM_ENGINE_IMAGE} AS upstream-engine
+@@ -49,8 +54,12 @@ RUN cmake -S . -B build -G Ninja \
+ 
+ FROM ubuntu:24.04 AS online-builder
+ ARG RAL_BUILD_JOBS
++ARG RALUE_MAX_CONNECTIONS=1000000
++ARG RALUE_MAX_DOCUMENTS=1000000
+ ENV DEBIAN_FRONTEND=noninteractive \
+-    RAL_BUILD_JOBS=${RAL_BUILD_JOBS}
++    RAL_BUILD_JOBS=${RAL_BUILD_JOBS} \
++    RALUE_MAX_CONNECTIONS=${RALUE_MAX_CONNECTIONS} \
++    RALUE_MAX_DOCUMENTS=${RALUE_MAX_DOCUMENTS}
+ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+     apt-get update && apt-get install -y --no-install-recommends \
+diff --git a/docker/ralue/RALUE_APP_INTEGRATION.md b/docker/ralue/RALUE_APP_INTEGRATION.md
+index 6cfb91eb..e309d0a1 100644
+--- a/docker/ralue/RALUE_APP_INTEGRATION.md
++++ b/docker/ralue/RALUE_APP_INTEGRATION.md
+@@ -28,7 +28,7 @@ the Ralue names.
+ The Career Hub application integration is intentionally small:
+ 
+ - `next.config.js`: prefer Ralue origins and expose the branded proxy alias;
+-- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.5` as `ralue-editor`;
++- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.6` as `ralue-editor`;
+ - `app/pdf-editor/[key]/page.tsx` and `app/cover-letter/[key]/page.tsx`: prefer
+   the Ralue public origin and use the Ralue purple CSS variable;
+ - `app/api/preview/pdf/route.ts`: use the server-side Ralue origin for PDF
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index dc31ca45..750d7e4e 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -9,7 +9,7 @@ commit in `UPSTREAM.lock`.
+ - `ralue-upstream-26.04.2.4`: immutable upstream source before Ralue changes.
+ - `ralue/mvp-editor`: working branch for the branded editor.
+ - `ralue/editor:upstream-26.04.2.4`: locally compiled, unmodified baseline.
+-- `ralue/editor:mvp-26.04.2.5`: branded MVP built from the tested baseline.
++- `ralue/editor:mvp-26.04.2.6`: branded MVP with the complete Ralue toolbar.
+ 
+ ## Build and resume
+ 
+@@ -23,7 +23,7 @@ Docker BuildKit caches downloads, npm dependencies, and completed build layers.
+ If a stage fails, correct it and run the same command; completed stages are not
+ rebuilt. A durable export of the cache is kept under `.build-progress/cache`.
+ 
+-Browser assets use the hexadecimal Ralue revision `a1e2604003`, separate from the pinned
++Browser assets use the hexadecimal Ralue revision `d82f06a1b4`, separate from the pinned
+ upstream engine hash. Bump this revision for each deployable UI release so
+ browsers never reuse bundles from an older editor build.
+ 
+@@ -90,7 +90,7 @@ After deployment, verify all three routes through the public hostname:
+ ```text
+ /hosting/discovery
+ /hosting/capabilities
+-/browser/a1e2604003/cool.html
++/browser/d82f06a1b4/cool.html
+ ```
+ 
+ Then run an authenticated open, edit, save, close, and reopen test through the
+@@ -115,7 +115,7 @@ Validated locally on 2026-09-23:
+ 
+ - discovery, capabilities, logo, favicon, and browser bundle returned HTTP 200;
+ - product name is `Ralue Editor`, source version is `26.04.2.4`, and the
+-  deployable browser revision is `a1e2604003`;
++  deployable browser revision is `d82f06a1b4`;
+ - the engine binary `libmergedlo.so` has the same SHA-256 in the upstream and
+   branded images: `cd949dab5bdc1c7158da06debd9fff493833eed581149cb7118c00fa71103c1e`;
+ - a real DOCX opened through the existing WOPI host, was edited, saved into a
+@@ -126,8 +126,8 @@ Validated locally on 2026-09-23:
+ - two simultaneous browser sessions opened the same WOPI document and the
+   editor reported both connected users; the primary session remained healthy
+   after the secondary session closed;
+-- an information-level startup audit of the compiled image reported 9,999
+-  concurrent client connections and 9,999 concurrent open documents, rather
++- an information-level startup audit of the compiled image reported 1,000,000
++  concurrent client connections and 1,000,000 concurrent open documents, rather
+   than the restricted 20-connection/10-document home-mode values; these are
+   software ceilings, not a promise that one server has enough CPU or RAM for
+   that workload;
+diff --git a/docker/ralue/build-online.sh b/docker/ralue/build-online.sh
+index 1a9a6371..13e4e9cb 100644
+--- a/docker/ralue/build-online.sh
++++ b/docker/ralue/build-online.sh
+@@ -1,10 +1,18 @@
+ #!/usr/bin/env bash
++# SPDX-License-Identifier: MPL-2.0
++#
++# This Source Code Form is subject to the terms of the Mozilla Public
++# License, v. 2.0. If a copy of the MPL was not distributed with this
++# file, You can obtain one at https://mozilla.org/MPL/2.0/.
++
+ set -Eeuo pipefail
+ 
+ readonly source_dir=/src
+ readonly stage_dir=/stage
+ readonly poco_prefix=/opt/ralue-poco
+-readonly online_hash=a1e2604003
++readonly online_hash=d82f06a1b4
++readonly max_connections="${RALUE_MAX_CONNECTIONS:-1000000}"
++readonly max_documents="${RALUE_MAX_DOCUMENTS:-1000000}"
+ 
+ export CCACHE_DIR=/root/.cache/ccache
+ export PATH="/usr/lib/ccache:${PATH}"
+@@ -44,6 +52,8 @@ LDFLAGS="-L${poco_prefix}/lib" \
+   --with-app-name="Ralue Editor" \
+   --with-vendor="Ralue" \
+   --with-info-url=https://www.ralue.app \
++  --with-max-connections="${max_connections}" \
++  --with-max-documents="${max_documents}" \
+   --enable-silent-rules \
+   --disable-feature-lock \
+   --disable-werror \
+diff --git a/docker/ralue/build.ps1 b/docker/ralue/build.ps1
+index e92e9b10..6b6e944c 100644
+--- a/docker/ralue/build.ps1
++++ b/docker/ralue/build.ps1
+@@ -1,5 +1,5 @@
+ param(
+-    [string]$Tag = "ralue/editor:mvp-26.04.2.5",
++    [string]$Tag = "ralue/editor:mvp-26.04.2.6",
+     [int]$Jobs = 0
+ )
+ 
+diff --git a/docker/ralue/compose.staging.yml b/docker/ralue/compose.staging.yml
+index e77ff81b..9f1f56e3 100644
+--- a/docker/ralue/compose.staging.yml
++++ b/docker/ralue/compose.staging.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.5
++    image: ralue/editor:mvp-26.04.2.6
+     container_name: ralue-editor-staging
+     restart: unless-stopped
+     init: true
+diff --git a/docker/ralue/compose.yml b/docker/ralue/compose.yml
+index 7b192812..ec977066 100644
+--- a/docker/ralue/compose.yml
++++ b/docker/ralue/compose.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.5
++    image: ralue/editor:mvp-26.04.2.6
+     container_name: ralue-editor
+     restart: unless-stopped
+     ports:

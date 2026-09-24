@@ -1,0 +1,54 @@
+From c82544aef2ace9b90590a4c6c427f5a0704de3c3 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Thu, 24 Sep 2026 21:55:44 +0200
+Subject: [PATCH 10/10] docs: publish MPL corresponding source offer
+
+---
+ OPEN_SOURCE_RELEASE.md |  8 ++++++++
+ docker/ralue/README.md | 10 +++++++---
+ 2 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/OPEN_SOURCE_RELEASE.md b/OPEN_SOURCE_RELEASE.md
+index 104e1a57..9e85dfe7 100644
+--- a/OPEN_SOURCE_RELEASE.md
++++ b/OPEN_SOURCE_RELEASE.md
+@@ -27,6 +27,14 @@ Before a public binary or hosted client bundle is released:
+ The release is not compliant merely because the repository exists: the source
+ link must be available to recipients of the matching executable/client bundle.
+ 
++The corresponding source offer for the current public build is maintained at:
++
++https://github.com/lmg136-ua/career-hub/tree/main/open-source/ralue-editor
++
++It identifies the immutable upstream revision and contains an ordered patch
++series with the Ralue modifications and build/deployment files needed to
++reconstruct the distributed editor.
++
+ Authoritative references:
+ 
+ - https://www.mozilla.org/MPL/2.0/
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index f9cd604a..81354fa8 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -50,9 +50,10 @@ docker compose -f .\docker\ralue\compose.yml up -d
+ 
+ The branded build uses the existing Ralue logo and favicon, reports itself as
+ Ralue Editor, disables welcome/update/feedback and subscription upsells, and
+-keeps the unrestricted non-home-mode connection behavior. Writer retains File,
+-Home, Insert, Layout, Format, and contextual document tabs; review, references,
+-forms, view, extensions, and help tabs are omitted from the default surface.
++keeps the unrestricted non-home-mode connection behavior. Writer exposes the
++complete English toolbar, including font controls and the File, Home, Insert,
++Layout, References, Review, Format, Form, View, and Help tabs, with Ralue's
++visual system applied without removing editing commands.
+ 
+ ## Staging deployment
+ 
+@@ -145,3 +146,6 @@ The upstream MPL-2.0 notices and source history stay intact. Ralue branding is
+ applied only after this baseline passes its WOPI editing and save tests. Public
+ distribution must include the corresponding modified source and must not use
+ Collabora trademarks as the product identity.
++
++The corresponding source package for the published Ralue build is available at
++https://github.com/lmg136-ua/career-hub/tree/main/open-source/ralue-editor.

@@ -1,0 +1,354 @@
+From 0cecf4f22eb1627acc2d26fcdfcf0fdc9ebdf5db Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Tue, 22 Sep 2026 23:55:47 +0200
+Subject: [PATCH 01/10] build: establish reproducible Ralue editor baseline
+
+---
+ .dockerignore                     |  10 +++
+ UPSTREAM.lock                     |  15 +++++
+ docker/ralue/Dockerfile           | 107 ++++++++++++++++++++++++++++++
+ docker/ralue/README.md            |  46 +++++++++++++
+ docker/ralue/build-online.sh      |  49 ++++++++++++++
+ docker/ralue/build.ps1            |  40 +++++++++++
+ docker/ralue/compose.baseline.yml |  23 +++++++
+ 7 files changed, 290 insertions(+)
+ create mode 100644 .dockerignore
+ create mode 100644 UPSTREAM.lock
+ create mode 100644 docker/ralue/Dockerfile
+ create mode 100644 docker/ralue/README.md
+ create mode 100644 docker/ralue/build-online.sh
+ create mode 100644 docker/ralue/build.ps1
+ create mode 100644 docker/ralue/compose.baseline.yml
+
+diff --git a/.dockerignore b/.dockerignore
+new file mode 100644
+index 00000000..42d4539a
+--- /dev/null
++++ b/.dockerignore
+@@ -0,0 +1,10 @@
++.git
++.gitmodules
++**/.git
++**/node_modules
++**/.cache
++**/workdir
++**/instdir
++**/*.log
++.qa-output
++
+diff --git a/UPSTREAM.lock b/UPSTREAM.lock
+new file mode 100644
+index 00000000..92e0cecf
+--- /dev/null
++++ b/UPSTREAM.lock
+@@ -0,0 +1,15 @@
++# Immutable inputs for the first Ralue Editor build.
++editor_name=Ralue Editor
++online_repository=https://github.com/CollaboraOnline/online.mirror.git
++online_commit=2229109277f4b443dd1eb5df11c5e59f74d1a45d
++online_version=26.04.2.4
++engine_image=collabora/code:26.04.2.4.1
++engine_image_digest=sha256:1f864ce3f0c49e867787b6dd303bd6ba989542d3023f6809df558eafd04c1b97
++engine_build_id=2229109277f4b443dd1eb5df11c5e59f74d1a45d
++engine_cxx_abi=0
++poco_version=1.15.3
++poco_tarball=poco-1.15.3-all.tar.bz2
++poco_sha256=562a1ba1a6db4665f81091c35e997b73f87e1b45e2ab2854cd720d2349518abc
++build_distribution=ubuntu:24.04
++node_image=node:20-bookworm-slim
++node_image_digest=sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+diff --git a/docker/ralue/Dockerfile b/docker/ralue/Dockerfile
+new file mode 100644
+index 00000000..c16cea0d
+--- /dev/null
++++ b/docker/ralue/Dockerfile
+@@ -0,0 +1,107 @@
++# syntax=docker/dockerfile:1.7
++
++ARG UPSTREAM_ENGINE_IMAGE=collabora/code:26.04.2.4.1@sha256:1f864ce3f0c49e867787b6dd303bd6ba989542d3023f6809df558eafd04c1b97
++FROM ${UPSTREAM_ENGINE_IMAGE} AS upstream-engine
++
++FROM node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 AS node-runtime
++
++FROM ubuntu:24.04 AS poco-builder
++ARG RAL_BUILD_JOBS=2
++ARG POCO_VERSION=1.15.3
++ARG POCO_SHA256=562a1ba1a6db4665f81091c35e997b73f87e1b45e2ab2854cd720d2349518abc
++ENV DEBIAN_FRONTEND=noninteractive
++RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
++    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
++    apt-get update && apt-get install -y --no-install-recommends \
++      build-essential ca-certificates cmake curl libexpat1-dev libpcre2-dev \
++      libssl-dev ninja-build zlib1g-dev
++WORKDIR /tmp/poco
++RUN --mount=type=cache,target=/var/cache/ralue-downloads,sharing=locked \
++    set -eux; \
++    archive="/var/cache/ralue-downloads/poco-${POCO_VERSION}-all.tar.bz2"; \
++    if [ ! -f "${archive}" ]; then \
++      curl -fL --retry 5 --retry-delay 2 \
++        "https://pocoproject.org/releases/poco-${POCO_VERSION}/poco-${POCO_VERSION}-all.tar.bz2" \
++        -o "${archive}"; \
++    fi; \
++    echo "${POCO_SHA256}  ${archive}" | sha256sum -c -; \
++    tar -xjf "${archive}" --strip-components=1
++RUN cmake -S . -B build -G Ninja \
++      -DCMAKE_BUILD_TYPE=Release \
++      -DCMAKE_INSTALL_PREFIX=/opt/ralue-poco \
++      -DCMAKE_CXX_FLAGS=-D_GLIBCXX_USE_CXX11_ABI=0 \
++      -DBUILD_SHARED_LIBS=OFF \
++      -DENABLE_TESTS=OFF \
++      -DENABLE_SAMPLES=OFF \
++      -DENABLE_DATA=OFF \
++      -DENABLE_DATA_SQLITE=OFF \
++      -DENABLE_DATA_MYSQL=OFF \
++      -DENABLE_DATA_POSTGRESQL=OFF \
++      -DENABLE_MONGODB=OFF \
++      -DENABLE_REDIS=OFF \
++      -DENABLE_PDF=OFF \
++      -DENABLE_JWT=OFF \
++      -DENABLE_PROMETHEUS=OFF \
++      -DENABLE_PAGECOMPILER=OFF \
++      -DENABLE_PAGECOMPILER_FILE2PAGE=OFF \
++    && cmake --build build --parallel "${RAL_BUILD_JOBS}" \
++    && cmake --install build
++
++FROM ubuntu:24.04 AS online-builder
++ARG RAL_BUILD_JOBS
++ENV DEBIAN_FRONTEND=noninteractive \
++    RAL_BUILD_JOBS=${RAL_BUILD_JOBS}
++RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
++    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
++    apt-get update && apt-get install -y --no-install-recommends \
++      autoconf automake binutils build-essential ca-certificates cpio curl \
++      fontconfig git libcap-dev libcppunit-dev libexpat1-dev libpam0g-dev \
++      libpcre2-dev libpng-dev libssl-dev libtool libzstd-dev make \
++      pkg-config python3-lxml python3-polib rsync zlib1g-dev
++COPY --from=node-runtime /usr/local/ /usr/local/
++COPY --from=upstream-engine /opt/collaboraoffice /opt/collaboraoffice
++COPY --from=poco-builder /opt/ralue-poco /opt/ralue-poco
++COPY . /src
++RUN --mount=type=cache,target=/root/.npm,sharing=locked \
++    --mount=type=cache,target=/src/browser/node_modules,sharing=locked \
++    --mount=type=cache,target=/src/.deps-cache,sharing=locked \
++    bash /src/docker/ralue/build-online.sh
++
++FROM ubuntu:24.04 AS runtime
++ENV DEBIAN_FRONTEND=noninteractive \
++    LC_CTYPE=C.UTF-8
++RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
++    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
++    apt-get update && apt-get install -y --no-install-recommends \
++      adduser ca-certificates cpio findutils fontconfig libcap2-bin libexpat1 \
++      libnss-wrapper libpcre2-8-0 libpng16-16 libssl3t64 libxcb-render0 \
++      libxcb-shm0 libxext6 libxrender1 libzstd1 openssl tzdata zlib1g \
++      fonts-droid-fallback fonts-noto-cjk fonts-wqy-microhei fonts-wqy-zenhei \
++    && rm -rf /var/lib/apt/lists/*
++COPY --from=upstream-engine /opt/collaboraoffice /opt/collaboraoffice
++COPY --from=online-builder /stage/ /
++RUN set -eux; \
++    setcap cap_fowner,cap_chown,cap_sys_chroot=ep /usr/bin/coolforkit-caps; \
++    setcap cap_sys_admin=ep /usr/bin/coolmount; \
++    groupadd --gid 1001 cool; \
++    useradd --system --uid 1001 --gid 1001 --home-dir /opt/cool --shell /usr/sbin/nologin cool; \
++    rm -rf /opt/cool; \
++    mkdir -p /opt/cool/child-roots /opt/cool/cache; \
++    chmod -R a+rX /opt/collaboraoffice; \
++    fc-cache /opt/collaboraoffice/share/fonts/truetype; \
++    coolwsd-systemplate-setup /opt/cool/systemplate /opt/collaboraoffice >/dev/null 2>&1; \
++    touch /var/log/coolwsd.log; \
++    chown -R 1001:1001 /opt/cool /etc/coolwsd /var/log/coolwsd.log; \
++    chmod 640 /etc/coolwsd/coolwsd.xml; \
++    rm -f /etc/coolwsd/proof_key*
++
++EXPOSE 9980
++USER 1001:1001
++ENTRYPOINT ["/usr/bin/coolwsd", \
++  "--use-env-vars", \
++  "--o:sys_template_path=/opt/cool/systemplate", \
++  "--o:child_root_path=/opt/cool/child-roots", \
++  "--o:file_server_root_path=/usr/share/coolwsd", \
++  "--o:cache_files.path=/opt/cool/cache", \
++  "--o:logging.color=false", \
++  "--o:stop_on_config_change=true"]
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+new file mode 100644
+index 00000000..7994a758
+--- /dev/null
++++ b/docker/ralue/README.md
+@@ -0,0 +1,46 @@
++# Ralue Editor reproducible baseline
++
++This build keeps the document engine byte-for-byte from the pinned upstream
++image and compiles the Online server and browser UI from the pinned source
++commit in `UPSTREAM.lock`.
++
++## Checkpoints
++
++- `ralue-upstream-26.04.2.4`: immutable upstream source before Ralue changes.
++- `ralue/mvp-editor`: working branch for the branded editor.
++- `ralue/editor:upstream-26.04.2.4`: locally compiled, unmodified baseline.
++
++## Build and resume
++
++From PowerShell at the repository root:
++
++```powershell
++.\docker\ralue\build.ps1
++```
++
++Docker BuildKit caches downloads, npm dependencies, and completed build layers.
++If a stage fails, correct it and run the same command; completed stages are not
++rebuilt. A durable export of the cache is kept under `.build-progress/cache`.
++
++To limit RAM usage, set an explicit job count:
++
++```powershell
++.\docker\ralue\build.ps1 -Jobs 2
++```
++
++## Run the source baseline
++
++```powershell
++docker compose -f .\docker\ralue\compose.baseline.yml up -d
++```
++
++The discovery endpoint is then available at
++`http://localhost:9982/hosting/discovery`.
++
++## Licensing boundary
++
++The upstream MPL-2.0 notices and source history stay intact. Ralue branding is
++applied only after this baseline passes its WOPI editing and save tests. Public
++distribution must include the corresponding modified source and must not use
++Collabora trademarks as the product identity.
++
+diff --git a/docker/ralue/build-online.sh b/docker/ralue/build-online.sh
+new file mode 100644
+index 00000000..8bf404cc
+--- /dev/null
++++ b/docker/ralue/build-online.sh
+@@ -0,0 +1,49 @@
++#!/usr/bin/env bash
++set -Eeuo pipefail
++
++readonly source_dir=/src
++readonly stage_dir=/stage
++readonly poco_prefix=/opt/ralue-poco
++readonly online_hash=2229109277
++
++# Windows may materialize this checkout with CRLF. Normalize text files only in
++# the disposable container layer so the host checkout and upstream history stay
++# untouched.
++find "${source_dir}" -type f -print0 \
++  | xargs -0 grep -Il $'\r' \
++  | xargs -r sed -i 's/\r$//'
++
++engine_abi=0
++if nm -D --defined-only /opt/collaboraoffice/program/libmergedlo.so 2>/dev/null | grep -q __cxx11; then
++  engine_abi=1
++fi
++readonly abi_flag="-D_GLIBCXX_USE_CXX11_ABI=${engine_abi}"
++readonly poco_compat_flag="-DPOCO_NEW_STATE_ON_MOVE=0"
++echo "Ralue build: engine C++ ABI is ${engine_abi}"
++
++printf '%s\n' "${online_hash}" > "${source_dir}/dist_git_hash"
++
++cd "${source_dir}"
++./autogen.sh
++
++CPPFLAGS="${abi_flag} ${poco_compat_flag} -I${poco_prefix}/include" \
++CXXFLAGS="${abi_flag} ${poco_compat_flag} -O2 -pipe" \
++LDFLAGS="-L${poco_prefix}/lib" \
++./configure \
++  --prefix=/usr \
++  --sysconfdir=/etc \
++  --localstatedir=/var \
++  --enable-silent-rules \
++  --disable-werror \
++  --disable-tests \
++  --with-system-poco \
++  --with-lokit-path="${source_dir}/engine/include" \
++  --with-lo-path=/opt/collaboraoffice
++
++make -j"${RAL_BUILD_JOBS:-$(nproc)}" \
++  COOL_VERSION="${online_hash}" \
++  ENVCFLAGSCXX="${abi_flag} ${poco_compat_flag}"
++
++rm -rf "${stage_dir}"
++mkdir -p "${stage_dir}"
++make DESTDIR="${stage_dir}" install
+diff --git a/docker/ralue/build.ps1 b/docker/ralue/build.ps1
+new file mode 100644
+index 00000000..d81a537a
+--- /dev/null
++++ b/docker/ralue/build.ps1
+@@ -0,0 +1,40 @@
++param(
++    [string]$Tag = "ralue/editor:upstream-26.04.2.4",
++    [int]$Jobs = 0
++)
++
++$ErrorActionPreference = "Stop"
++$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
++$dockerfile = Join-Path $repoRoot "docker\ralue\Dockerfile"
++$progress = Join-Path $repoRoot ".build-progress"
++New-Item -ItemType Directory -Force -Path $progress | Out-Null
++
++$arguments = @(
++    "buildx", "build",
++    "--load",
++    "--progress=plain",
++    "--file", $dockerfile,
++    "--tag", $Tag,
++    "--cache-from", "type=local,src=$progress\cache",
++    "--cache-to", "type=local,dest=$progress\cache-next,mode=max"
++)
++
++if ($Jobs -gt 0) {
++    $arguments += @("--build-arg", "RAL_BUILD_JOBS=$Jobs")
++}
++
++$arguments += $repoRoot
++& docker @arguments
++if ($LASTEXITCODE -ne 0) {
++    throw "Ralue Editor build failed with exit code $LASTEXITCODE. Docker cache was preserved."
++}
++
++if (Test-Path "$progress\cache-next") {
++    if (Test-Path "$progress\cache") {
++        Remove-Item -LiteralPath "$progress\cache" -Recurse -Force
++    }
++    Move-Item -LiteralPath "$progress\cache-next" -Destination "$progress\cache"
++}
++
++Write-Host "Built $Tag successfully. Re-running this script will reuse the saved cache."
++
+diff --git a/docker/ralue/compose.baseline.yml b/docker/ralue/compose.baseline.yml
+new file mode 100644
+index 00000000..3ab1aff2
+--- /dev/null
++++ b/docker/ralue/compose.baseline.yml
+@@ -0,0 +1,23 @@
++services:
++  editor:
++    image: ralue/editor:upstream-26.04.2.4
++    container_name: ralue-editor-source-baseline
++    restart: unless-stopped
++    ports:
++      - "9982:9980"
++    environment:
++      DONT_GEN_SSL_CERT: "true"
++      domain: "localhost|127\\.0\\.0\\.1|host\\.docker\\.internal"
++    command:
++      - "--o:ssl.enable=false"
++      - "--o:welcome.enable=false"
++      - "--o:home_mode.enable=false"
++      - "--o:logging.level=warning"
++      - "--o:net.frame_ancestors=http://localhost:3001 http://127.0.0.1:3001"
++    healthcheck:
++      test: ["CMD", "/usr/bin/coolconfig", "get", "logging.level"]
++      interval: 15s
++      timeout: 5s
++      retries: 10
++      start_period: 30s
++

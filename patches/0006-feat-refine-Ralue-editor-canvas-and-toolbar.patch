@@ -1,0 +1,380 @@
+From 08b658dda49e01dc74a8089d88c6bdf628f8f4d1 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Wed, 23 Sep 2026 22:33:32 +0200
+Subject: [PATCH 06/10] feat: refine Ralue editor canvas and toolbar
+
+---
+ browser/css/leaflet.css                       | 26 ++++++---
+ browser/css/menubar.css                       |  4 +-
+ browser/css/notebookbar.css                   | 53 +++++++++++++------
+ .../src/control/Control.NotebookbarBase.ts    |  4 ++
+ browser/src/layer/tile/CanvasTileLayer.js     | 12 ++++-
+ docker/ralue/RALUE_APP_INTEGRATION.md         |  2 +-
+ docker/ralue/README.md                        |  8 +--
+ docker/ralue/build-online.sh                  |  2 +-
+ docker/ralue/build.ps1                        |  2 +-
+ docker/ralue/compose.staging.yml              |  3 +-
+ docker/ralue/compose.yml                      |  2 +-
+ 11 files changed, 80 insertions(+), 38 deletions(-)
+
+diff --git a/browser/css/leaflet.css b/browser/css/leaflet.css
+index 3adaddb1..ce1a0b14 100644
+--- a/browser/css/leaflet.css
++++ b/browser/css/leaflet.css
+@@ -582,9 +582,9 @@ div.leaflet-cursor-container:hover > .leaflet-cursor-header {
+ 	}
+ }
+ 
+-@keyframes MoveUpDown {
+-	0%, 100% {bottom: -38px;}
+-	50% {bottom: -48px;}
++@keyframes RalueLoaderPulse {
++	0%, 100% { transform: scale(0.96); opacity: 0.82; }
++	50% { transform: scale(1.03); opacity: 1; }
+ }
+ 
+ .leaflet-text-selection-container {
+@@ -706,18 +706,28 @@ input.clipboard {
+ .leaflet-progress-spinner::before {
+ 	content: '';
+ 	position: relative;
+-	animation: MoveUpDown 1s linear infinite;
++	animation: RalueLoaderPulse 1.6s ease-in-out infinite;
+ 	z-index: 1;
+ 	display: block;
+-	width: 100%;
+-	height: 78px;
+-	margin: 0 0 4px;
+-	background: var(--spinner-logo) no-repeat 44px center/78px;
++	width: 72px;
++	height: 72px;
++	margin: 0 auto 12px;
++	background: var(--spinner-logo) no-repeat center/contain;
++	filter: drop-shadow(0 8px 20px color-mix(in srgb, var(--color-main-text) 16%, transparent));
++	will-change: transform, opacity;
+ }
+ .leaflet-progress-spinner-canvas {
+ 	position: static !important;
+ }
+ 
++@media (prefers-reduced-motion: reduce) {
++	.leaflet-progress-spinner::before {
++		animation: none;
++		opacity: 1;
++		transform: none;
++	}
++}
++
+ .leaflet-progress-label {
+ 	text-align: center;
+ 	font: var(--default-font-size)/1.5 var(--cool-font);
+diff --git a/browser/css/menubar.css b/browser/css/menubar.css
+index 4d9e200d..d546c573 100644
+--- a/browser/css/menubar.css
++++ b/browser/css/menubar.css
+@@ -167,8 +167,8 @@ nav.hasnotebookbar [id^='save'].saved::after {
+ }
+ 
+ .main-nav.hasnotebookbar:not(.readonly) #document-titlebar {
+-	display: flex;
+-	align-self: center;
++	/* The host application already owns the CV name and rename workflow. */
++	display: none;
+ }
+ 
+ @media screen and (max-width: 900px) {
+diff --git a/browser/css/notebookbar.css b/browser/css/notebookbar.css
+index daa24a5f..2b6f35cb 100644
+--- a/browser/css/notebookbar.css
++++ b/browser/css/notebookbar.css
+@@ -1,6 +1,6 @@
+ 
+ .notebookbar-scroll-wrapper {
+-	height: 82px;
++	height: 70px;
+ 	display: flex;
+ 	overflow-x: auto;
+ 	overflow-y: hidden;
+@@ -50,8 +50,8 @@ span.notebookbar.static-label,
+ 
+ .notebookbar-tabs-container {
+ 	display: inline-flex;
+-	flex: 0.1 0.1 auto;
+-	margin-inline-start: 5px;
++	flex: 1 1 auto;
++	margin-inline-start: 8px;
+ }
+ 
+ .ui-tabs.notebookbar {
+@@ -62,18 +62,19 @@ span.notebookbar.static-label,
+ }
+ 
+ .notebookbar#NotebookBar {
+-	height: 82px;
++	height: 70px;
+ }
+ 
+ button.ui-tab.notebookbar {
+ 	box-sizing: border-box;
+-	height: 24px;
++	height: 30px;
+ 	display: flex;
+ 	align-items: center;
+ 	justify-content: center;
+-	padding: 0 clamp(4px, 1vw, 1em);
++	padding: 0 clamp(8px, 1.2vw, 16px);
+ 	border: 1px solid transparent;
+ 	background-color: transparent;
++	border-radius: 8px 8px 0 0;
+ 	/* calc([minimum size]
+ 	   + ([maximum size] - [minimum size])
+ 	   * ((100vw - [minimum viewport width]) / ([maximum viewport width] - [minimum viewport width]))); */
+@@ -103,14 +104,15 @@ button.ui-tab.notebookbar {
+ 
+ .ui-tab.selected.notebookbar {
+ 	border: 1px solid transparent !important;
+-	color: var(--color-text-darker) !important;
+-	box-shadow: inset 12px 0 var(--color-main-background), inset -12px 0 var(--color-main-background), inset 0 -2px rgb(var(--doc-type));
+-	transition: box-shadow 0.1s ease-out;
++	color: var(--co-primary-element, #6c4cf5) !important;
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 10%, var(--color-main-background));
++	box-shadow: inset 0 -2px var(--co-primary-element, #6c4cf5);
++	transition: background-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+ }
+ 
+ .ui-tab.selected.notebookbar:hover {
+-	box-shadow: inset 0 0 var(--color-main-background), inset 0 0 var(--color-main-background), inset 0 -2px rgb(var(--doc-type));
+-	transition: box-shadow 0.3s ease;
++	box-shadow: inset 0 -2px var(--co-primary-element, #6c4cf5);
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 14%, var(--color-main-background));
+ }
+ 
+ /* Tint contextual tabs (Table Design, Sparkline, Picture, Chart, Shape,
+@@ -123,7 +125,8 @@ button.ui-tab.notebookbar {
+ .ui-tab.notebookbar:hover {
+ 	cursor: pointer !important;
+ 	color: var(--color-text-darker) !important;
+-	box-shadow: inset 12px 0 var(--color-main-background), inset -12px 0 var(--color-main-background), inset 0 -2px var(--color-border);
++	box-shadow: inset 0 -2px var(--color-border);
++	background: var(--color-background-lighter);
+ }
+ 
+ /* Document Logo */
+@@ -249,6 +252,8 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 	background: var(--color-background-lighter);
+ 	position: relative;
+ 	z-index: 11;
++	border-bottom: 1px solid var(--color-border-lighter);
++	box-shadow: 0 4px 14px color-mix(in srgb, var(--color-main-text) 6%, transparent);
+ }
+ 
+ .notebookbar.horizontal.ui-overflow-manager {
+@@ -256,7 +261,7 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ }
+ 
+ .hasnotebookbar > #toolbar-row {
+-	height: 82px;
++	height: 70px;
+ }
+ 
+ .vertical.notebookbar {
+@@ -269,15 +274,15 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ .notebookbar.ui-separator.vertical {
+ 	width: 1px;
+ 	background-color: var(--color-toolbar-border);
+-	height: var(--notebookbar-element-height);
+-	margin: 0 2px;
++	height: 42px;
++	margin: 0 6px;
+ 	box-sizing: border-box;
+ }
+ 
+ .horizontal.notebookbar {
+ 	display: grid;
+ 	grid-auto-flow: column;
+-	grid-gap: var(--spacing-s);
++	grid-gap: 3px;
+ 	align-items: center;
+ 	justify-items: center;
+ 	width: max-content;
+@@ -315,7 +320,8 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 	background-color: transparent;
+ 	margin: 0;
+ 	vertical-align: middle;
+-	border: none;
++	border: 1px solid transparent;
++	border-radius: 8px;
+ 	line-height: 0em;
+ 	color: var(--color-main-text);
+ 	font-size: var(--default-font-size);
+@@ -326,6 +332,19 @@ html[data-theme='dark'] .savemodified.unotoolbutton:not(.notebookbar) .unobutton
+ 	align-items: center;
+ }
+ 
++.hasnotebookbar .unotoolbutton.notebookbar .unobutton:hover,
++.hasnotebookbar .unotoolbutton.notebookbar.selected .unobutton {
++	color: var(--co-primary-element, #6c4cf5);
++	background: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 10%, var(--color-main-background));
++	border-color: color-mix(in srgb, var(--co-primary-element, #6c4cf5) 16%, transparent);
++}
++
++.hasnotebookbar .notebookbar.ui-combobox,
++.hasnotebookbar .notebookbar.ui-listbox,
++.hasnotebookbar .notebookbar.ui-spinfields {
++	border-radius: 8px;
++}
++
+ .unotoolbutton.notebookbar .unobutton::after {
+ 	--click-increment: -1px;
+ 	position: absolute;
+diff --git a/browser/src/control/Control.NotebookbarBase.ts b/browser/src/control/Control.NotebookbarBase.ts
+index 5eb1e060..f71677f3 100644
+--- a/browser/src/control/Control.NotebookbarBase.ts
++++ b/browser/src/control/Control.NotebookbarBase.ts
+@@ -245,6 +245,10 @@ class NotebookbarBase extends JSDialogComponent {
+ 		this.impl?.hideTabs();
+ 	}
+ 
++	public refreshContextTabsVisibility() {
++		this.impl?.refreshContextTabsVisibility();
++	}
++
+ 	// customization
+ 
+ 	public showItem(id: string, show?: boolean): boolean {
+diff --git a/browser/src/layer/tile/CanvasTileLayer.js b/browser/src/layer/tile/CanvasTileLayer.js
+index c83cae52..9e729f49 100644
+--- a/browser/src/layer/tile/CanvasTileLayer.js
++++ b/browser/src/layer/tile/CanvasTileLayer.js
+@@ -135,7 +135,9 @@ window.L.TileSectionManager = window.L.Class.extend({
+ 	 **/
+ 	_getZoomDocPos: function (pinchCenter, pinchStartCenter, paneBounds, freezePane, splitPos, scale, findFreePaneCenter) {
+ 		let xMin = 0;
+-		const hasXMargin = !this._layer.isCalc();
++		// Writer is a vertically-scrolled page editor. Keep its left edge bounded
++		// instead of allowing the sheet to float freely across the background.
++		const hasXMargin = !this._layer.isCalc() && !this._layer.isWriter();
+ 		if (hasXMargin) {
+ 			xMin = -Infinity;
+ 		} else if (paneBounds.min.x > 0) {
+@@ -3414,6 +3416,14 @@ window.L.CanvasTileLayer = window.L.Layer.extend({
+ 		if (this.isWriter() && bringCommentsIntoView) newSize.x -= commentWidth;
+ 
+ 		var ratio = newSize.x / documentWidth;
++		if (this.isWriter()) {
++			// Ralue starts Writer at a readable middle distance: the page fits the
++			// available width with breathing room, but never zooms closer than 85%.
++			// This is deliberately not fit-page; vertical navigation remains natural.
++			const WRITER_HORIZONTAL_MARGIN = 0.08;
++			const WRITER_INITIAL_MAX_SCALE = 0.85;
++			ratio = Math.min(ratio * (1 - WRITER_HORIZONTAL_MARGIN), WRITER_INITIAL_MAX_SCALE);
++		}
+ 		_zoom = this._map.getScaleZoom(ratio);
+ 
+ 		/* assume that this is the range of diagonal sizes we are going to get
+diff --git a/docker/ralue/RALUE_APP_INTEGRATION.md b/docker/ralue/RALUE_APP_INTEGRATION.md
+index 9f02dfcf..6cfb91eb 100644
+--- a/docker/ralue/RALUE_APP_INTEGRATION.md
++++ b/docker/ralue/RALUE_APP_INTEGRATION.md
+@@ -28,7 +28,7 @@ the Ralue names.
+ The Career Hub application integration is intentionally small:
+ 
+ - `next.config.js`: prefer Ralue origins and expose the branded proxy alias;
+-- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.4` as `ralue-editor`;
++- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.5` as `ralue-editor`;
+ - `app/pdf-editor/[key]/page.tsx` and `app/cover-letter/[key]/page.tsx`: prefer
+   the Ralue public origin and use the Ralue purple CSS variable;
+ - `app/api/preview/pdf/route.ts`: use the server-side Ralue origin for PDF
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index 47699f31..dc31ca45 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -9,7 +9,7 @@ commit in `UPSTREAM.lock`.
+ - `ralue-upstream-26.04.2.4`: immutable upstream source before Ralue changes.
+ - `ralue/mvp-editor`: working branch for the branded editor.
+ - `ralue/editor:upstream-26.04.2.4`: locally compiled, unmodified baseline.
+-- `ralue/editor:mvp-26.04.2.4`: branded MVP built from the tested baseline.
++- `ralue/editor:mvp-26.04.2.5`: branded MVP built from the tested baseline.
+ 
+ ## Build and resume
+ 
+@@ -23,7 +23,7 @@ Docker BuildKit caches downloads, npm dependencies, and completed build layers.
+ If a stage fails, correct it and run the same command; completed stages are not
+ rebuilt. A durable export of the cache is kept under `.build-progress/cache`.
+ 
+-Browser assets use the hexadecimal Ralue revision `a1e2604001`, separate from the pinned
++Browser assets use the hexadecimal Ralue revision `a1e2604003`, separate from the pinned
+ upstream engine hash. Bump this revision for each deployable UI release so
+ browsers never reuse bundles from an older editor build.
+ 
+@@ -90,7 +90,7 @@ After deployment, verify all three routes through the public hostname:
+ ```text
+ /hosting/discovery
+ /hosting/capabilities
+-/browser/a1e2604001/cool.html
++/browser/a1e2604003/cool.html
+ ```
+ 
+ Then run an authenticated open, edit, save, close, and reopen test through the
+@@ -115,7 +115,7 @@ Validated locally on 2026-09-23:
+ 
+ - discovery, capabilities, logo, favicon, and browser bundle returned HTTP 200;
+ - product name is `Ralue Editor`, source version is `26.04.2.4`, and the
+-  deployable browser revision is `a1e2604001`;
++  deployable browser revision is `a1e2604003`;
+ - the engine binary `libmergedlo.so` has the same SHA-256 in the upstream and
+   branded images: `cd949dab5bdc1c7158da06debd9fff493833eed581149cb7118c00fa71103c1e`;
+ - a real DOCX opened through the existing WOPI host, was edited, saved into a
+diff --git a/docker/ralue/build-online.sh b/docker/ralue/build-online.sh
+index 4f613383..1a9a6371 100644
+--- a/docker/ralue/build-online.sh
++++ b/docker/ralue/build-online.sh
+@@ -4,7 +4,7 @@ set -Eeuo pipefail
+ readonly source_dir=/src
+ readonly stage_dir=/stage
+ readonly poco_prefix=/opt/ralue-poco
+-readonly online_hash=a1e2604001
++readonly online_hash=a1e2604003
+ 
+ export CCACHE_DIR=/root/.cache/ccache
+ export PATH="/usr/lib/ccache:${PATH}"
+diff --git a/docker/ralue/build.ps1 b/docker/ralue/build.ps1
+index 6cf71c64..e92e9b10 100644
+--- a/docker/ralue/build.ps1
++++ b/docker/ralue/build.ps1
+@@ -1,5 +1,5 @@
+ param(
+-    [string]$Tag = "ralue/editor:mvp-26.04.2.4",
++    [string]$Tag = "ralue/editor:mvp-26.04.2.5",
+     [int]$Jobs = 0
+ )
+ 
+diff --git a/docker/ralue/compose.staging.yml b/docker/ralue/compose.staging.yml
+index 2e0922d3..e77ff81b 100644
+--- a/docker/ralue/compose.staging.yml
++++ b/docker/ralue/compose.staging.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.4
++    image: ralue/editor:mvp-26.04.2.5
+     container_name: ralue-editor-staging
+     restart: unless-stopped
+     init: true
+@@ -38,4 +38,3 @@ services:
+       options:
+         max-size: "10m"
+         max-file: "5"
+-
+diff --git a/docker/ralue/compose.yml b/docker/ralue/compose.yml
+index f2b1e2f1..7b192812 100644
+--- a/docker/ralue/compose.yml
++++ b/docker/ralue/compose.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.4
++    image: ralue/editor:mvp-26.04.2.5
+     container_name: ralue-editor
+     restart: unless-stopped
+     ports:
