@@ -1,7 +1,7 @@
 From 80990210276bfecc861e5d535fdb15b675769c81 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Thu, 24 Sep 2026 16:42:28 +0200
-Subject: [PATCH 07/10] feat: restore complete Ralue editor toolbar
+Subject: [PATCH 07/11] feat: restore complete Ralue editor toolbar
 
 ---
  OPEN_SOURCE_RELEASE.md                        | 34 ++++++++++++++++

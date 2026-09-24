@@ -1,0 +1,33 @@
+From 25d22de0f3878b31a58d6d3a6b888f8324fa19fb Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Thu, 24 Sep 2026 22:07:51 +0200
+Subject: [PATCH 11/11] docs: point source offer to public repository
+
+---
+ OPEN_SOURCE_RELEASE.md | 2 +-
+ docker/ralue/README.md | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/OPEN_SOURCE_RELEASE.md b/OPEN_SOURCE_RELEASE.md
+index 9e85dfe7..a86ff524 100644
+--- a/OPEN_SOURCE_RELEASE.md
++++ b/OPEN_SOURCE_RELEASE.md
+@@ -29,7 +29,7 @@ link must be available to recipients of the matching executable/client bundle.
+ 
+ The corresponding source offer for the current public build is maintained at:
+ 
+-https://github.com/lmg136-ua/career-hub/tree/main/open-source/ralue-editor
++https://github.com/lmg136-ua/ralue-editor-source
+ 
+ It identifies the immutable upstream revision and contains an ordered patch
+ series with the Ralue modifications and build/deployment files needed to
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index 81354fa8..ad3ed6d2 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -148,4 +148,4 @@ distribution must include the corresponding modified source and must not use
+ Collabora trademarks as the product identity.
+ 
+ The corresponding source package for the published Ralue build is available at
+-https://github.com/lmg136-ua/career-hub/tree/main/open-source/ralue-editor.
++https://github.com/lmg136-ua/ralue-editor-source.

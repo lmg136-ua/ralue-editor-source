@@ -13,7 +13,7 @@ marks belong to their respective owners.
 
 - Ralue image: `ralue/editor:mvp-26.04.2.9`
 - Ralue source tag: `ralue-editor-mvp-26.04.2.9-source-offer`
-- Ralue source commit: `c82544ae`
+- Ralue source commit: `25d22de0`
 - Browser revision: `c84e02f6a1`
 - Upstream repository: `https://github.com/CollaboraOnline/online.mirror.git`
 - Upstream commit: `2229109277f4b443dd1eb5df11c5e59f74d1a45d`
@@ -27,7 +27,7 @@ patch in lexical order:
 git clone --filter=blob:none https://github.com/CollaboraOnline/online.mirror.git ralue-editor
 cd ralue-editor
 git checkout 2229109277f4b443dd1eb5df11c5e59f74d1a45d
-git am /path/to/career-hub/open-source/ralue-editor/patches/*.patch
+git am /path/to/ralue-editor-source/patches/*.patch
 ```
 
 The patch series includes the modified MPL-covered files plus the Ralue build

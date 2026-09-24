@@ -1,7 +1,7 @@
 From e71d6e52ac57cb23f1e6eb09ea41725cda61724b Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Wed, 23 Sep 2026 17:04:56 +0200
-Subject: [PATCH 05/10] docs: record Ralue limits and app integration
+Subject: [PATCH 05/11] docs: record Ralue limits and app integration
 
 ---
  docker/ralue/RALUE_APP_INTEGRATION.md | 53 +++++++++++++++++++++++++++
