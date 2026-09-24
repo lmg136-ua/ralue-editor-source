@@ -1,7 +1,7 @@
 From 3c9fb7fdf0a57001de986e863effde5471d63068 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Thu, 24 Sep 2026 23:58:14 +0200
-Subject: [PATCH 13/15] feat: add host zoom controls and hide document title
+Subject: [PATCH 13/17] feat: add host zoom controls and hide document title
 
 ---
  browser/css/menubar.css             |  8 +++----

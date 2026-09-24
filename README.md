@@ -11,10 +11,10 @@ marks belong to their respective owners.
 
 ## Exact release
 
-- Ralue image: `ralue/editor:mvp-26.04.2.11`
-- Ralue source tag: `ralue-editor-mvp-26.04.2.11-source-offer`
-- Ralue source commit: `38455e04`
-- Browser revision: `8a2228542b`
+- Ralue image: `ralue/editor:mvp-26.04.2.12`
+- Ralue source tag: `ralue-editor-mvp-26.04.2.12-source-offer`
+- Ralue source commit: `4099a7f6`
+- Browser revision: `fdb46de0f5`
 - Upstream repository: `https://github.com/CollaboraOnline/online.mirror.git`
 - Upstream commit: `2229109277f4b443dd1eb5df11c5e59f74d1a45d`
 

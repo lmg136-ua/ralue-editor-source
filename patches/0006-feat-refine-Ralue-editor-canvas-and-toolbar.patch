@@ -1,7 +1,7 @@
 From 08b658dda49e01dc74a8089d88c6bdf628f8f4d1 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Wed, 23 Sep 2026 22:33:32 +0200
-Subject: [PATCH 06/15] feat: refine Ralue editor canvas and toolbar
+Subject: [PATCH 06/17] feat: refine Ralue editor canvas and toolbar
 
 ---
  browser/css/leaflet.css                       | 26 ++++++---

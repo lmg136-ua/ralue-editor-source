@@ -1,0 +1,29 @@
+From 9e0a860af795bf6586f0aa9aa27cd668bcbd0f8f Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Fri, 25 Sep 2026 00:18:11 +0200
+Subject: [PATCH 16/17] fix: hide document title in viewing mode
+
+---
+ browser/css/menubar.css | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/browser/css/menubar.css b/browser/css/menubar.css
+index 5f015af7..10df3146 100644
+--- a/browser/css/menubar.css
++++ b/browser/css/menubar.css
+@@ -166,13 +166,13 @@ nav.hasnotebookbar [id^='save'].saved::after {
+ 	margin-right: 52px;
+ }
+ 
+-.main-nav.hasnotebookbar #document-titlebar {
++.main-nav #document-titlebar {
+ 	/* The host application owns the CV name in both edit and viewing modes. */
+ 	display: none !important;
+ }
+ 
+ @media screen and (max-width: 900px) {
+-	.main-nav.hasnotebookbar #document-titlebar {
++	.main-nav #document-titlebar {
+ 		display: none;
+ 	}
+ 	.notebookbar-tabs-container {
