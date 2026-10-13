@@ -1,7 +1,7 @@
 From a01e5907ee117476dbccd5675bd60f20d2016ef3 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Thu, 24 Sep 2026 18:04:17 +0200
-Subject: [PATCH 09/17] feat: apply full Ralue color system to toolbar
+Subject: [PATCH 09/19] feat: apply full Ralue color system to toolbar
 
 ---
  browser/css/notebookbar.css           | 72 ++++++++++++++++++++++-----

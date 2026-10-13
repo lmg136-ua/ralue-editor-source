@@ -1,7 +1,7 @@
 From 25d22de0f3878b31a58d6d3a6b888f8324fa19fb Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Thu, 24 Sep 2026 22:07:51 +0200
-Subject: [PATCH 11/17] docs: point source offer to public repository
+Subject: [PATCH 11/19] docs: point source offer to public repository
 
 ---
  OPEN_SOURCE_RELEASE.md | 2 +-

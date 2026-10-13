@@ -1,0 +1,244 @@
+From cca60537c3ef63c177ec9187a728b00d4b5858b5 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Tue, 13 Oct 2026 17:14:10 +0200
+Subject: [PATCH 18/19] feat: refine Ralue document loading with minimal
+ English UI
+
+---
+ browser/css/leaflet.css                     | 89 +++++++++++++++++++++
+ browser/src/layer/marker/ProgressOverlay.js | 52 ++++++++++--
+ docker/ralue/build.ps1                      | 14 ++++
+ 3 files changed, 149 insertions(+), 6 deletions(-)
+
+diff --git a/browser/css/leaflet.css b/browser/css/leaflet.css
+index ce1a0b14..bc10c854 100644
+--- a/browser/css/leaflet.css
++++ b/browser/css/leaflet.css
+@@ -737,6 +737,95 @@ input.clipboard {
+ 	color: white !important;
+ }
+ 
++/* Ralue's opening/reload state: quiet branding and real or indeterminate progress. */
++.leaflet-progress-layer.ralue-progress-layer {
++	box-sizing: border-box;
++	width: min(328px, calc(100% - 32px));
++	padding: 24px;
++	border-radius: 0;
++	background: transparent;
++	color: var(--color-main-text);
++	text-align: center;
++}
++
++.ralue-progress-layer .leaflet-progress-spinner::before {
++	width: 38px;
++	height: 50px;
++	margin-bottom: 16px;
++	animation: none;
++	filter: none;
++}
++
++.ralue-progress-layer .leaflet-progress-spinner-canvas {
++	display: none;
++}
++
++.ralue-progress-layer .leaflet-progress-label.brand-label {
++	margin-bottom: 13px;
++	font-size: 12px;
++	font-weight: 500;
++	letter-spacing: 0.12em;
++	text-transform: uppercase;
++	color: var(--color-text-light) !important;
++}
++
++.ralue-progress-title {
++	margin-bottom: 7px;
++	font: 500 19px/1.4 var(--cool-font);
++	letter-spacing: -0.025em;
++}
++
++.ralue-progress-layer .leaflet-progress-label:not(.brand-label) {
++	font: 13px/1.6 var(--cool-font);
++	color: var(--color-text-light) !important;
++}
++
++.ralue-progress-layer .leaflet-progress {
++	height: 4px;
++	margin: 25px 0 0;
++	border: 0;
++	border-radius: 4px;
++	overflow: hidden;
++	background: color-mix(in srgb, var(--color-main-text) 12%, transparent);
++}
++
++.ralue-progress-layer .leaflet-progress > span {
++	display: block;
++	float: none;
++	margin: 0;
++	border: 0;
++	border-radius: inherit;
++	box-shadow: none;
++	background: linear-gradient(90deg, #a78bfa, #8b5cf6, #d46bb5);
++	transition: width 200ms ease;
++}
++
++.ralue-progress-layer .ralue-progress-indeterminate > span {
++	width: 38% !important;
++	animation: RalueProgressSweep 2s ease-in-out infinite;
++}
++
++.ralue-progress-note {
++	margin-top: 12px;
++	font: 11px/1.5 var(--cool-font);
++	color: var(--color-text-light);
++}
++
++@keyframes RalueProgressSweep {
++	from { transform: translateX(-110%); }
++	to { transform: translateX(370%); }
++}
++
++@media (prefers-reduced-motion: reduce) {
++	.ralue-progress-layer .ralue-progress-indeterminate > span {
++		animation: none;
++		transform: translateX(80%);
++	}
++	.ralue-progress-layer .leaflet-progress > span {
++		transition: none;
++	}
++}
++
+ .leaflet-progress-label.brand-label {
+ 	font-size: 0.875rem;
+ 	font-weight: bold;
+diff --git a/browser/src/layer/marker/ProgressOverlay.js b/browser/src/layer/marker/ProgressOverlay.js
+index 199f490a..fc75fec7 100644
+--- a/browser/src/layer/marker/ProgressOverlay.js
++++ b/browser/src/layer/marker/ProgressOverlay.js
+@@ -33,6 +33,11 @@ L.ProgressOverlay = window.L.Layer.extend({
+ 			productName = (typeof brandProductName !== 'undefined') ? brandProductName : 'Collabora Online Development Edition (unbranded)';
+ 		}
+ 		if (window.logoURL) {
++			this._branded = productName === 'Ralue Editor';
++			if (this._branded) {
++				this._container.classList.add('ralue-progress-layer');
++				this._container.setAttribute('aria-busy', 'true');
++			}
+ 			this._spinner.style.setProperty(
+ 				'--spinner-logo',
+ 				`url("${window.logoURL}")`
+@@ -40,17 +45,31 @@ L.ProgressOverlay = window.L.Layer.extend({
+ 			this._spinnerCanvas.style.opacity = '0';
+ 		}
+ 		this._brandLabel = window.L.DomUtil.create('div', 'leaflet-progress-label brand-label', this._container);
+-		this._brandLabel.innerHTML = productName;
++		this._brandLabel.textContent = productName;
++		if (this._branded) {
++			this._title = window.L.DomUtil.create('div', 'ralue-progress-title', this._container);
++			this._title.textContent = 'Loading your document';
++			this._title.setAttribute('role', 'status');
++			this._title.setAttribute('aria-live', 'polite');
++		}
+ 
+ 
+ 		this._label = window.L.DomUtil.create('div', 'leaflet-progress-label', this._container);
+ 		this._progress = window.L.DomUtil.create('div', 'leaflet-progress', this._container);
+ 		this._bar = window.L.DomUtil.create('span', '', this._progress);
+ 		this._value = window.L.DomUtil.create('span', '', this._bar);
++		if (this._branded) {
++			this._progress.setAttribute('role', 'progressbar');
++			this._progress.setAttribute('aria-label', 'Loading document');
++			this._progress.classList.add('ralue-progress-indeterminate');
++			this._note = window.L.DomUtil.create('div', 'ralue-progress-note', this._container);
++			this._note.textContent = 'One moment…';
++		}
+ 
+ 		window.L.DomUtil.setStyle(this._value, 'line-height', this._size.y + 'px');
+ 
+-		this._container.style.width  = this._size.x + 'px';
++		if (!this._branded)
++			this._container.style.width = this._size.x + 'px';
+ 
+ 		window.L.DomEvent
+ 			.disableClickPropagation(this._progress)
+@@ -69,7 +88,8 @@ L.ProgressOverlay = window.L.Layer.extend({
+ 
+ 	showSpinner: function() {
+ 		window.L.DomUtil.get('document-container').appendChild(this._container);
+-		this._spinnerInterval = app.LOUtil.startSpinner(this._spinnerCanvas, this.options.spinnerSpeed);
++		if (!window.logoURL)
++			this._spinnerInterval = app.LOUtil.startSpinner(this._spinnerCanvas, this.options.spinnerSpeed);
+ 	},
+ 
+ 	hideSpinner: function() {
+@@ -115,6 +135,10 @@ L.ProgressOverlay = window.L.Layer.extend({
+ 	},
+ 
+ 	setLabel: function (label) {
++		if (this._branded) {
++			this._label.textContent = 'Preparing the editor view.';
++			return;
++		}
+ 		if (this._container && this._label.innerHTML !== label) {
+ 			this._label.innerHTML = label;
+ 		}
+@@ -122,6 +146,20 @@ L.ProgressOverlay = window.L.Layer.extend({
+ 
+ 	setBar: function (bar) {
+ 		if (this._container) {
++			if (this._branded) {
++				this._progress.classList.toggle('ralue-progress-indeterminate', !bar);
++				if (bar) {
++					this._progress.setAttribute('aria-valuemin', '0');
++					this._progress.setAttribute('aria-valuemax', '100');
++					this._progress.setAttribute('aria-valuenow', this._percent);
++				} else {
++					this._progress.removeAttribute('aria-valuemin');
++					this._progress.removeAttribute('aria-valuemax');
++					this._progress.removeAttribute('aria-valuenow');
++				}
++				this._progress.style.visibility = '';
++				return;
++			}
+ 			if (bar) {
+ 				this._progress.style.visibility = '';
+ 			}
+@@ -133,9 +171,11 @@ L.ProgressOverlay = window.L.Layer.extend({
+ 
+ 	setValue: function (value) {
+ 		if (this._container) {
+-			this._percent = value;
+-			this._bar.style.width = value + '%';
+-			this._value.innerHTML = value + '%';
++			this._percent = Math.max(0, Math.min(100, Number(value) || 0));
++			this._bar.style.width = this._percent + '%';
++			this._value.textContent = this._branded ? '' : this._percent + '%';
++			if (this._branded && !this._progress.classList.contains('ralue-progress-indeterminate'))
++				this._progress.setAttribute('aria-valuenow', this._percent);
+ 		}
+ 	}
+ });
+diff --git a/docker/ralue/build.ps1 b/docker/ralue/build.ps1
+index 7e9ce916..c671259b 100644
+--- a/docker/ralue/build.ps1
++++ b/docker/ralue/build.ps1
+@@ -30,6 +30,20 @@ if ($LASTEXITCODE -ne 0) {
+ }
+ 
+ if (Test-Path "$progress\cache-next") {
++    $resolvedProgress = (Resolve-Path -LiteralPath $progress).Path
++    $expectedProgress = [System.IO.Path]::GetFullPath((Join-Path $repoRoot '.build-progress'))
++    if (-not $resolvedProgress.Equals($expectedProgress, [System.StringComparison]::OrdinalIgnoreCase)) {
++        throw 'Build cache directory escaped the editor workspace.'
++    }
++    foreach ($cacheName in @('cache', 'cache-next')) {
++        $cachePath = Join-Path $resolvedProgress $cacheName
++        if (Test-Path -LiteralPath $cachePath) {
++            $resolvedCache = (Resolve-Path -LiteralPath $cachePath).Path
++            if (-not $resolvedCache.Equals($cachePath, [System.StringComparison]::OrdinalIgnoreCase)) {
++                throw 'Build cache target escaped the cache directory.'
++            }
++        }
++    }
+     if (Test-Path "$progress\cache") {
+         Remove-Item -LiteralPath "$progress\cache" -Recurse -Force
+     }

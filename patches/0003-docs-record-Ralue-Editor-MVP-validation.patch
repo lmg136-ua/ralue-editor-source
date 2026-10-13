@@ -1,7 +1,7 @@
 From bcfa7eeac93b916bbbeaf689be4c7bb75c745562 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Wed, 23 Sep 2026 01:03:13 +0200
-Subject: [PATCH 03/17] docs: record Ralue Editor MVP validation
+Subject: [PATCH 03/19] docs: record Ralue Editor MVP validation
 
 ---
  docker/ralue/README.md | 29 +++++++++++++++++++++++++++++

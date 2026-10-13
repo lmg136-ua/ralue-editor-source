@@ -1,7 +1,7 @@
 From 4099a7f6762168719adca841a67d705142b81430 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Fri, 25 Sep 2026 00:28:43 +0200
-Subject: [PATCH 17/17] chore: release Ralue Editor 26.04.2.12
+Subject: [PATCH 17/19] chore: release Ralue Editor 26.04.2.12
 
 ---
  docker/ralue/RALUE_APP_INTEGRATION.md | 2 +-

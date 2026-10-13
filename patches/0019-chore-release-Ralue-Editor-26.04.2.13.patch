@@ -1,0 +1,124 @@
+From 939c8563de4cc2500da2917acb411fcf07f9b6a9 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Tue, 13 Oct 2026 17:55:48 +0200
+Subject: [PATCH 19/19] chore: release Ralue Editor 26.04.2.13
+
+---
+ docker/ralue/RALUE_APP_INTEGRATION.md | 2 +-
+ docker/ralue/README.md                | 8 ++++----
+ docker/ralue/build-online.sh          | 2 +-
+ docker/ralue/build.ps1                | 2 +-
+ docker/ralue/compose.staging.yml      | 2 +-
+ docker/ralue/compose.yml              | 4 ++--
+ 6 files changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/docker/ralue/RALUE_APP_INTEGRATION.md b/docker/ralue/RALUE_APP_INTEGRATION.md
+index ebb003f7..3247a4ec 100644
+--- a/docker/ralue/RALUE_APP_INTEGRATION.md
++++ b/docker/ralue/RALUE_APP_INTEGRATION.md
+@@ -28,7 +28,7 @@ the Ralue names.
+ The Career Hub application integration is intentionally small:
+ 
+ - `next.config.js`: prefer Ralue origins and expose the branded proxy alias;
+-- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.12` as `ralue-editor`;
++- `docker-compose.yml`: run `ralue/editor:mvp-26.04.2.13` as `ralue-editor`;
+ - `app/pdf-editor/[key]/page.tsx` and `app/cover-letter/[key]/page.tsx`: prefer
+   the Ralue public origin and use the Ralue purple CSS variable;
+ - `app/api/preview/pdf/route.ts`: use the server-side Ralue origin for PDF
+diff --git a/docker/ralue/README.md b/docker/ralue/README.md
+index 6fece7b3..95e2f946 100644
+--- a/docker/ralue/README.md
++++ b/docker/ralue/README.md
+@@ -9,7 +9,7 @@ commit in `UPSTREAM.lock`.
+ - `ralue-upstream-26.04.2.4`: immutable upstream source before Ralue changes.
+ - `ralue/mvp-editor`: working branch for the branded editor.
+ - `ralue/editor:upstream-26.04.2.4`: locally compiled, unmodified baseline.
+-- `ralue/editor:mvp-26.04.2.12`: branded MVP with the full-color Ralue toolbar and stable Writer zoom.
++- `ralue/editor:mvp-26.04.2.13`: branded MVP with the full-color Ralue toolbar and stable Writer zoom.
+ 
+ ## Build and resume
+ 
+@@ -23,7 +23,7 @@ Docker BuildKit caches downloads, npm dependencies, and completed build layers.
+ If a stage fails, correct it and run the same command; completed stages are not
+ rebuilt. A durable export of the cache is kept under `.build-progress/cache`.
+ 
+-Browser assets use the hexadecimal Ralue revision `fdb46de0f5`, separate from the pinned
++Browser assets use the hexadecimal Ralue revision `5a1704217d`, separate from the pinned
+ upstream engine hash. Bump this revision for each deployable UI release so
+ browsers never reuse bundles from an older editor build.
+ 
+@@ -91,7 +91,7 @@ After deployment, verify all three routes through the public hostname:
+ ```text
+ /hosting/discovery
+ /hosting/capabilities
+-/browser/fdb46de0f5/cool.html
++/browser/5a1704217d/cool.html
+ ```
+ 
+ Then run an authenticated open, edit, save, close, and reopen test through the
+@@ -116,7 +116,7 @@ Validated locally on 2026-09-23:
+ 
+ - discovery, capabilities, logo, favicon, and browser bundle returned HTTP 200;
+ - product name is `Ralue Editor`, source version is `26.04.2.4`, and the
+-  deployable browser revision is `fdb46de0f5`;
++  deployable browser revision is `5a1704217d`;
+ - the engine binary `libmergedlo.so` has the same SHA-256 in the upstream and
+   branded images: `cd949dab5bdc1c7158da06debd9fff493833eed581149cb7118c00fa71103c1e`;
+ - a real DOCX opened through the existing WOPI host, was edited, saved into a
+diff --git a/docker/ralue/build-online.sh b/docker/ralue/build-online.sh
+index f6a29574..016e350d 100644
+--- a/docker/ralue/build-online.sh
++++ b/docker/ralue/build-online.sh
+@@ -10,7 +10,7 @@ set -Eeuo pipefail
+ readonly source_dir=/src
+ readonly stage_dir=/stage
+ readonly poco_prefix=/opt/ralue-poco
+-readonly online_hash=fdb46de0f5
++readonly online_hash=5a1704217d
+ readonly max_connections="${RALUE_MAX_CONNECTIONS:-1000000}"
+ readonly max_documents="${RALUE_MAX_DOCUMENTS:-1000000}"
+ 
+diff --git a/docker/ralue/build.ps1 b/docker/ralue/build.ps1
+index c671259b..f25a6f85 100644
+--- a/docker/ralue/build.ps1
++++ b/docker/ralue/build.ps1
+@@ -1,5 +1,5 @@
+ param(
+-    [string]$Tag = "ralue/editor:mvp-26.04.2.12",
++    [string]$Tag = "ralue/editor:mvp-26.04.2.13",
+     [int]$Jobs = 0
+ )
+ 
+diff --git a/docker/ralue/compose.staging.yml b/docker/ralue/compose.staging.yml
+index 1d4fb76a..38405596 100644
+--- a/docker/ralue/compose.staging.yml
++++ b/docker/ralue/compose.staging.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.12
++    image: ralue/editor:mvp-26.04.2.13
+     container_name: ralue-editor-staging
+     restart: unless-stopped
+     init: true
+diff --git a/docker/ralue/compose.yml b/docker/ralue/compose.yml
+index 6db5935e..ed342638 100644
+--- a/docker/ralue/compose.yml
++++ b/docker/ralue/compose.yml
+@@ -1,6 +1,6 @@
+ services:
+   editor:
+-    image: ralue/editor:mvp-26.04.2.12
++    image: ralue/editor:mvp-26.04.2.13
+     container_name: ralue-editor
+     restart: unless-stopped
+     ports:
+@@ -18,7 +18,7 @@ services:
+       - "--o:user_interface.brandProductURL=https://www.ralue.app"
+       - "--o:user_interface.logoURL=/browser/dist/images/ralue-logo.png"
+       - "--o:logging.level=warning"
+-      - "--o:net.frame_ancestors=http://localhost:3001 http://127.0.0.1:3001"
++      - "--o:net.frame_ancestors=http://localhost:3001 http://127.0.0.1:3001 http://localhost:3101 http://127.0.0.1:3101"
+     healthcheck:
+       test: ["CMD", "/usr/bin/coolconfig", "get", "logging.level"]
+       interval: 15s
