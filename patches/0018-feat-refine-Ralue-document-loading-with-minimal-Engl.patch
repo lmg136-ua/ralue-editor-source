@@ -1,7 +1,7 @@
 From cca60537c3ef63c177ec9187a728b00d4b5858b5 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Tue, 13 Oct 2026 17:14:10 +0200
-Subject: [PATCH 18/19] feat: refine Ralue document loading with minimal
+Subject: [PATCH 18/22] feat: refine Ralue document loading with minimal
  English UI
 
 ---

@@ -1,0 +1,33 @@
+From 0fcc09664efc1e58aec6005d7bf75d4b16d349ae Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Wed, 28 Oct 2026 22:41:34 +0100
+Subject: [PATCH 20/22] fix: reset initial Writer viewport to the top paper
+ edge
+
+---
+ browser/src/map/handler/Map.WOPI.js | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/browser/src/map/handler/Map.WOPI.js b/browser/src/map/handler/Map.WOPI.js
+index 306cb444..74cf1d72 100644
+--- a/browser/src/map/handler/Map.WOPI.js
++++ b/browser/src/map/handler/Map.WOPI.js
+@@ -684,8 +684,17 @@ window.L.Map.WOPI = window.L.Handler.extend({
+ 		else if (msg.MessageId === 'Action_SetZoom') {
+ 			const requestedZoom = Number(msg.Values && msg.Values.Zoom);
+ 			const zoomIndex = this._map.getZoomIndex(requestedZoom);
+-			if (zoomIndex > 0)
++			if (zoomIndex > 0) {
+ 				this._map.setZoom(zoomIndex, null, true);
++				// Initial Writer zoom must reveal the paper edge, not just the
++				// first text line. Moving the caret alone can leave the top margin
++				// clipped. Keep this opt-in so ordinary zoom preserves reading position.
++				if (msg.Values.ResetView === true && this._map._docLayer._docType === 'text') {
++					this._map.sendUnoCommand('.uno:GoToStartOfDoc');
++					const layout = app.activeDocument.activeLayout;
++					layout.scrollTo(layout.viewedRectangle.pX1, 0);
++				}
++			}
+ 		}
+ 		else if (msg.MessageId === 'Get_Zoom') {
+ 			this._postZoomState();

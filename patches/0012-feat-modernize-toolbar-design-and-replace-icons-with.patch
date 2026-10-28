@@ -1,7 +1,7 @@
 From c8483156a5b8abaff7f7712e2457d9034187c0ed Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Thu, 24 Sep 2026 23:27:21 +0200
-Subject: [PATCH 12/19] feat: modernize toolbar design and replace icons with
+Subject: [PATCH 12/22] feat: modernize toolbar design and replace icons with
  Lucide vectors
 
 ---

@@ -1,7 +1,7 @@
 From c82544aef2ace9b90590a4c6c427f5a0704de3c3 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Thu, 24 Sep 2026 21:55:44 +0200
-Subject: [PATCH 10/19] docs: publish MPL corresponding source offer
+Subject: [PATCH 10/22] docs: publish MPL corresponding source offer
 
 ---
  OPEN_SOURCE_RELEASE.md |  8 ++++++++

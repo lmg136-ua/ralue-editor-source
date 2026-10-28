@@ -1,7 +1,7 @@
 From 9e0a860af795bf6586f0aa9aa27cd668bcbd0f8f Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Fri, 25 Sep 2026 00:18:11 +0200
-Subject: [PATCH 16/19] fix: hide document title in viewing mode
+Subject: [PATCH 16/22] fix: hide document title in viewing mode
 
 ---
  browser/css/menubar.css | 4 ++--

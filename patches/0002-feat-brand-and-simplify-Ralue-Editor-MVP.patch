@@ -1,7 +1,7 @@
 From 209e9085f92acc8828dc94eec1da8497abf66bce Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Wed, 23 Sep 2026 00:50:00 +0200
-Subject: [PATCH 02/19] feat: brand and simplify Ralue Editor MVP
+Subject: [PATCH 02/22] feat: brand and simplify Ralue Editor MVP
 
 ---
  .dockerignore                                 |   2 +-

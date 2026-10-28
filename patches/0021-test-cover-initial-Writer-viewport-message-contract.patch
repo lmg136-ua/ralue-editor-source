@@ -1,0 +1,60 @@
+From 5bd2334f37bf473828fd2719bc2c65e4a2922664 Mon Sep 17 00:00:00 2001
+From: lmg136-ua <lmg136@alu.ua.es>
+Date: Wed, 28 Oct 2026 22:50:46 +0100
+Subject: [PATCH 21/22] test: cover initial Writer viewport message contract
+
+---
+ test/ralue-writer-viewport.test.cjs | 44 +++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 test/ralue-writer-viewport.test.cjs
+
+diff --git a/test/ralue-writer-viewport.test.cjs b/test/ralue-writer-viewport.test.cjs
+new file mode 100644
+index 00000000..089712dd
+--- /dev/null
++++ b/test/ralue-writer-viewport.test.cjs
+@@ -0,0 +1,44 @@
++/* SPDX-License-Identifier: MPL-2.0 */
++const fs = require('node:fs');
++const path = require('node:path');
++const vm = require('node:vm');
++const assert = require('node:assert/strict');
++const { test } = require('node:test');
++
++function zoom(values, docType = 'text') {
++	const calls = [];
++	const app = { activeDocument: { activeLayout: {
++		viewedRectangle: { pX1: 42 },
++		scrollTo: (...args) => calls.push(['scroll', ...args]),
++	} } };
++	const window = { WOPIPostmessageReady: true, app: { console }, L: {
++		Map: { addInitHook() {} }, Handler: { extend: definition => definition },
++	} };
++	const source = path.join(__dirname, '../browser/src/map/handler/Map.WOPI.js');
++	vm.runInNewContext(fs.readFileSync(source, 'utf8'), { window, app });
++	const handler = { ...window.L.Map.WOPI, _appLoaded: true,
++		_allowMessageOrigin: () => true, _map: {
++			_docLayer: { _docType: docType },
++			getZoomIndex: value => value === 120 ? 11 : 0,
++			setZoom: (...args) => calls.push(['zoom', ...args]),
++			sendUnoCommand: command => calls.push(['uno', command]),
++		},
++	};
++	handler._postMessageListener({ data: { MessageId: 'Action_SetZoom', Values: values } });
++	return calls;
++}
++
++test('initial Writer view resets the caret and reveals the top paper edge', () => {
++	assert.deepEqual(zoom({ Zoom: 120, ResetView: true }), [
++		['zoom', 11, null, true], ['uno', '.uno:GoToStartOfDoc'], ['scroll', 42, 0],
++	]);
++});
++test('ordinary zoom preserves the reading position', () => {
++	assert.deepEqual(zoom({ Zoom: 120 }), [['zoom', 11, null, true]]);
++});
++test('ResetView does not change non-Writer documents', () => {
++	assert.deepEqual(zoom({ Zoom: 120, ResetView: true }, 'spreadsheet'), [['zoom', 11, null, true]]);
++});
++test('unsupported zoom values do not reset the view', () => {
++	assert.deepEqual(zoom({ Zoom: 123, ResetView: true }), []);
++});

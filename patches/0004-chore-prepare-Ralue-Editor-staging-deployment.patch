@@ -1,7 +1,7 @@
 From c5cc08d35fd72eeaba2a54bb553f590b4e947df8 Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Wed, 23 Sep 2026 16:57:22 +0200
-Subject: [PATCH 04/19] chore: prepare Ralue Editor staging deployment
+Subject: [PATCH 04/22] chore: prepare Ralue Editor staging deployment
 
 ---
  .gitignore                       |  3 ++

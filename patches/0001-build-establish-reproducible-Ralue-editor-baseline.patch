@@ -1,7 +1,7 @@
 From 0cecf4f22eb1627acc2d26fcdfcf0fdc9ebdf5db Mon Sep 17 00:00:00 2001
 From: lmg136-ua <lmg136@alu.ua.es>
 Date: Tue, 22 Sep 2026 23:55:47 +0200
-Subject: [PATCH 01/19] build: establish reproducible Ralue editor baseline
+Subject: [PATCH 01/22] build: establish reproducible Ralue editor baseline
 
 ---
  .dockerignore                     |  10 +++
